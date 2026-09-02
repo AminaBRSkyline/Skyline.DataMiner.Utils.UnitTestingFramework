@@ -6,9 +6,9 @@
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
     using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
 
-    internal static class ProtocolModelBuilder
+    public static class ProtocolModelBuilder
     {
-        internal static IProtocolModel Build(string customPathToProtocolXml)
+        public static IProtocolModel Build(string customPathToProtocolXml)
         {
             string pathToProtocolXml = String.IsNullOrEmpty(customPathToProtocolXml) ? GetSolutionDirectory().FullName + "\\protocol.xml" : customPathToProtocolXml;
 

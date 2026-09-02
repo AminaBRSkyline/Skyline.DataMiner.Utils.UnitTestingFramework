@@ -7,7 +7,7 @@
     /// <summary>
     /// Table model builder.
     /// </summary>
-    internal class TableModelBuilder
+    public class TableModelBuilder
     {
         private readonly int tableId;
         private readonly List<ColumnDefinition> columns = new List<ColumnDefinition>();
@@ -57,7 +57,7 @@
         /// <param name="column">The column to add.</param>
         /// <param name="isKey">if set to <c>true</c> [is key].</param>
         /// <exception cref="InvalidOperationException">Another column has already been added as primary key column.</exception>
-        internal void AddColumn(int columnPid, int columnIdx, bool isKey = false, string columnName = null)
+        public void AddColumn(int columnPid, int columnIdx, bool isKey = false, string columnName = null)
         {
             AddColumn(new ColumnDefinition(columnName ?? "random name", typeof(object), columnPid, columnIdx), isKey);
         }

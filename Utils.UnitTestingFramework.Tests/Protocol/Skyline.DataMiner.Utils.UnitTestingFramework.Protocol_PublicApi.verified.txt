@@ -29,6 +29,46 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Protocol.Asserting
             where TRow : Skyline.DataMiner.Scripting.QActionTableRow;
     }
 }
+namespace Skyline.DataMiner.Utils.UnitTestingFramework.Protocol.Constants
+{
+    public static class Constants
+    {
+        public const uint HRESULT_FAIL_DIFFLEN = 2147746337u;
+        public const int HRESULT_FAIL_IDINEXISTENT = -2147220959;
+        public const uint HRESULT_SUCCESS = 0u;
+        public const double PROTOCOL_CLEAR = double.NegativeInfinity;
+        public const double PROTOCOL_LEAVE = double.PositiveInfinity;
+    }
+}
+namespace Skyline.DataMiner.Utils.UnitTestingFramework.Protocol.Data
+{
+    public static class TableModelExtensionsForProtocol
+    {
+        public static string AddRowReturnKey(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel) { }
+        public static string AddRowReturnKey(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, object[] row) { }
+        public static string AddRowReturnKey(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, string primaryKey) { }
+        public static int DeleteRowReturnRemainingRows(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, params string[] primaryKeys) { }
+        public static object FillArray(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, System.Collections.Generic.List<object[]> rows, Skyline.DataMiner.Scripting.NotifyProtocol.SaveOption option, System.DateTime? timeInfo = default) { }
+        public static void FillArray(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, object[][] columns, System.DateTime? timeInfo = default, bool useClearAndLeave = false) { }
+        public static void FillArrayNoDelete(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, object[][] columns, System.DateTime? timeInfo = default, bool useClearAndLeave = false) { }
+        public static void FillArrayWithColumn(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, int columnPid, string[] primaryKeys, object[] columnValues, System.DateTime? timeInfo = default, bool useClearAndLeave = false) { }
+        public static void FillArrayWithColumns(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, string[] primaryKeys, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<int, object[]>> columnPidsToValues, System.DateTime? timestamp = default, bool useClearAndLeave = false) { }
+        public static object[] GetColumnByPid(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, int columnPid) { }
+        public static object GetParameterIndex(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, int oneBasedRowIndex, int oneBasedColumnIndex) { }
+        public static object GetParameterIndexByKey(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, string primaryKey, int oneBasedColumnIndex) { }
+        public static TRow GetRow<TRow>(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, int index)
+            where TRow : Skyline.DataMiner.Scripting.QActionTableRow { }
+        public static TRow GetRow<TRow>(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, string key)
+            where TRow : Skyline.DataMiner.Scripting.QActionTableRow { }
+        public static object[][] GetTableColumns(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, uint[] columnIndexes) { }
+        public static bool SetParameterIndex(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, int oneBasedRowIndex, int oneBasedColumnIndex, object value, System.DateTime? timeInfo = default) { }
+        public static bool SetParameterIndexByKey(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, string primaryKey, int oneBasedColumnIndex, object value, System.DateTime? timeInfo = default) { }
+        public static object SetRowReturnChanges(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, int rowIndex, object[] row, System.DateTime? timestamp = default, bool useClearAndLeave = false) { }
+        public static object SetRowReturnChanges(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, string primaryKey, object[] row, System.DateTime? timestamp = default, bool useClearAndLeave = false) { }
+        public static int SetRowReturnOneBasedIndex(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, string primaryKey) { }
+        public static int SetRowReturnOneBasedIndex(this Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table.ITableModel tableModel, object[] row, System.DateTime? timestamp = default) { }
+    }
+}
 namespace Skyline.DataMiner.Utils.UnitTestingFramework.Protocol
 {
     public class SLProtocolMock : Skyline.DataMiner.Utils.UnitTestingFramework.Protocol.SLProtocolMock<Skyline.DataMiner.Scripting.SLProtocol>

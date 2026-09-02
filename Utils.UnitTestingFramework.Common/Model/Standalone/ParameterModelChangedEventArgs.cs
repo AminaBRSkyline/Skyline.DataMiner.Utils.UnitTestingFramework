@@ -5,7 +5,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone
     /// <summary>
     /// Provides data for parameter model change notifications.
     /// </summary>
-    internal class ParameterModelChangedEventArgs : ParameterValueChangedEventArgs<ParameterDefinition>
+    public class ParameterModelChangedEventArgs : ParameterValueChangedEventArgs<ParameterDefinition>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ParameterModelChangedEventArgs"/> class.

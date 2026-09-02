@@ -6,7 +6,7 @@
 
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Creation;
 
-    internal static class ParametersAndTablesBuilder
+    public static class ParametersAndTablesBuilder
     {
         public static ParametersAndTables Build(string customPathToProtocolXml)
         {

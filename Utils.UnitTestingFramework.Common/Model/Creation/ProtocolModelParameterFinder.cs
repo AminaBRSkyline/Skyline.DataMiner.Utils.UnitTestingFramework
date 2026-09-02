@@ -5,7 +5,7 @@
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
     using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
 
-    internal class ProtocolModelParameterFinder : IProtocolModelParameterFinder
+    public class ProtocolModelParameterFinder : IProtocolModelParameterFinder
     {
         private readonly IProtocolModel protocolModel;
 
