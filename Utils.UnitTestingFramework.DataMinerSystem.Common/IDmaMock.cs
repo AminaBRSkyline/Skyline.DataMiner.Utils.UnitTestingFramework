@@ -21,6 +21,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
     {
         private readonly Cache cache;
         private AgentState state = AgentState.Running;
+
+        internal List<int> ElementIds { get; } = new List<int>();
+
+        internal List<int> ServiceIds { get; } = new List<int>();
+
         /// Gets or sets the host name returned by the mock.
         public AgentState State
         {
@@ -58,6 +63,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
 
             Setup(dma => dma.Id).Returns(id);
             Setup(dma => dma.Name).Returns(name);
+            Setup(dma => dma.Dms).Returns(() => cache.GetDms().Object);
             Setup(dma => dma.HostName).Returns(() => HostName);
 
             Setup(dma => dma.State).Returns(() => State);
@@ -66,16 +72,20 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
 
             Setup(dma => dma.VersionInfo).Returns(() => VersionInfo);
 
-            Setup(dma => dma.GetElements()).Returns(() => cache.GetElements(id).Where(element => element.Object.State != ElementState.Deleted).Select(element => element.Object).ToList());
-            Setup(dma => dma.GetServices()).Returns(() => cache.GetServices(id).Select(service => service.Object).ToList());
-
+            Setup(dma => dma.GetElements()).Returns(() => ElementIds.Select(elementId => cache.GetElement(id, elementId)).Where(elementMock => elementMock != null && elementMock.Object.State != ElementState.Deleted).Select(elementMock => elementMock.Object).ToList());
+            Setup(dma => dma.GetServices()).Returns(() => ServiceIds.Select(serviceId => cache.GetService(id, serviceId)).Where(serviceMock => serviceMock != null).Select(serviceMock => serviceMock.Object).ToList());
+            Setup(dma => dma.CreateService(It.IsAny<ServiceConfiguration>())).Returns((ServiceConfiguration configuration) => CreateService(configuration));
             Setup(dma => dma.ElementExists(It.IsAny<DmsElementId>())).Returns((DmsElementId elementId) =>
             {
+                ValidateElementId(elementId);
+
                 var elementMock = cache.GetElement(elementId.AgentId, elementId.ElementId);
-                return elementMock != null && elementMock.Object.State != ElementState.Deleted;
+                return elementId.AgentId == id && elementMock != null && elementMock.Object.State != ElementState.Deleted;
             });
             Setup(dma => dma.ElementExists(It.IsAny<string>())).Returns((string elementName) =>
             {
+                ValidateElementName(elementName);
+
                 var elementMock = cache.GetElement(id, elementName);
                 return elementMock != null && elementMock.Object.State != ElementState.Deleted;
             });
@@ -121,8 +131,10 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             });
             Setup(dma => dma.GetElement(It.IsAny<DmsElementId>())).Returns((DmsElementId dmsElementId) =>
             {
+                ValidateElementId(dmsElementId);
+
                 var elementMock = cache.GetElement(dmsElementId.AgentId, dmsElementId.ElementId);
-                if (elementMock == null || elementMock.Object.State == ElementState.Deleted)
+                if (dmsElementId.AgentId != id || elementMock == null || elementMock.Object.State == ElementState.Deleted)
                 {
                     throw new ElementNotFoundException(dmsElementId);
                 }
@@ -133,13 +145,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
 
             Setup(dma => dma.GetElement(It.IsAny<string>())).Returns((string elementName) =>
             {
-                if (elementName == null){
-                    throw new ArgumentNullException(nameof(elementName));
-                }
-
-                if (String.IsNullOrWhiteSpace(elementName)){
-                    throw new ArgumentException("The element name cannot be empty or white space.", nameof(elementName));
-                }
+                ValidateElementName(elementName);
 
                 var elementMock = cache.GetElement(id, elementName);
 
@@ -169,8 +175,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         {
             var elementMock = new IDmsElementMock(cache, pathToProtocolXml, id, agentId, name);
 
-            elementMock.Setup(element => element.Host).Returns(Object);
-
             cache.AddElement(elementMock);
 
             return elementMock;
@@ -186,17 +190,73 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         {
             var serviceMock = new IDmsServiceMock(cache, serviceId, Object.Id, name);
 
-            serviceMock.Setup(service => service.Host).Returns(Object);
-
             cache.AddService(serviceMock);
 
             return serviceMock;
         }
 
+        private DmsServiceId CreateService(ServiceConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            if (cache.GetDma(Object.Id) == null)
+            {
+                throw new AgentNotFoundException(Object.Id);
+            }
+
+            foreach (var view in configuration.Views)
+            {
+                var viewMock = view == null ? null : cache.GetView(view.Id);
+
+                if (viewMock == null || !ReferenceEquals(viewMock.Object, view))
+                {
+                    throw new IncorrectDataException("The service configuration contains a view that does not belong to this DataMiner System.");
+                }
+            }
+
+            var serviceMock = CreateService(GetNextServiceId(), configuration.Name);
+            serviceMock.Description = configuration.Description;
+
+            foreach (var view in configuration.Views)
+            {
+                serviceMock.AddView(view.Id);
+            }
+
+            return serviceMock.Object.DmsServiceId;
+        }
+
         internal int GetNextElementId()
         {
-            var elementMocks = cache.GetElements(Object.Id);
-            return elementMocks.Count == 0 ? 1 : elementMocks.Max(element => element.Object.Id) + 1;
+            return ElementIds.Count == 0 ? 1 : ElementIds.Max() + 1;
+        }
+
+        internal int GetNextServiceId()
+        {
+            return ServiceIds.Count == 0 ? 1 : ServiceIds.Max() + 1;
+        }
+
+        private static void ValidateElementId(DmsElementId elementId)
+        {
+            if (elementId.AgentId < 1 || elementId.ElementId < 1)
+            {
+                throw new ArgumentException("The DataMiner Agent ID and element ID must be positive.", nameof(elementId));
+            }
+        }
+
+        private static void ValidateElementName(string elementName)
+        {
+            if (elementName == null)
+            {
+                throw new ArgumentNullException(nameof(elementName));
+            }
+
+            if (String.IsNullOrWhiteSpace(elementName))
+            {
+                throw new ArgumentException("The element name cannot be empty or white space.", nameof(elementName));
+            }
         }
 
         private static void ValidateServiceId(DmsServiceId serviceId)

@@ -443,6 +443,20 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        [DataRow(0, 1)]
+        [DataRow(1, 0)]
+        [DataRow(-1, 1)]
+        [DataRow(1, -1)]
+        public void GetElement_InvalidDmsElementId_ThrowsArgumentException(int agentId, int elementId)
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.GetElement(new DmsElementId(agentId, elementId)));
+        }
+
+        [TestMethod]
         public void GetElementReference_NonExistingId_ReturnsReferenceWithProvidedId()
         {
             // Arrange

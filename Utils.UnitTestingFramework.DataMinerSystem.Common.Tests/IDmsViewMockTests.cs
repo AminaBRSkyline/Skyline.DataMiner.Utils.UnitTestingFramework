@@ -184,6 +184,33 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        public void Exists_ViewIsDeleted_ReturnsFalse()
+        {
+            // Arrange
+            var viewMock = new IDmsMock().CreateView(viewId: 10);
+
+            // Act & Assert
+            Assert.IsTrue(viewMock.Object.Exists());
+
+            viewMock.Object.Delete();
+
+            Assert.IsFalse(viewMock.Object.Exists());
+        }
+
+        [TestMethod]
+        public void Update_ExistingView_DoesNotThrowException()
+        {
+            // Arrange
+            var viewMock = new IDmsMock().CreateView(viewId: 10);
+
+            // Act
+            viewMock.Object.Update();
+
+            // Assert
+            Assert.IsTrue(viewMock.Object.Exists());
+        }
+
+        [TestMethod]
         public void Display_CustomValue_ReturnsProvidedValue()
         {
             // Arrange
@@ -280,7 +307,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var dmsMock = new IDmsMock();
             var viewMock = dmsMock.CreateView(viewId: 10);
             var elementMock = dmsMock.CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
-            elementMock.Views.Add(viewMock.Object);
+            elementMock.AddView(viewMock.Object.Id);
 
             // Act
             var elements = viewMock.Object.Elements;
@@ -299,8 +326,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var firstViewMock = dmsMock.CreateView(viewId: 10, name: "First View");
             var secondViewMock = dmsMock.CreateView(viewId: 11, name: "Second View");
             var elementMock = dmsMock.CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
-            elementMock.Views.Add(firstViewMock.Object);
-            elementMock.Views.Add(secondViewMock.Object);
+            elementMock.AddView(firstViewMock.Object.Id);
+            elementMock.AddView(secondViewMock.Object.Id);
 
             // Act & Assert
             Assert.AreSame(elementMock.Object, firstViewMock.Object.Elements.Single());
@@ -314,7 +341,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var dmsMock = new IDmsMock();
             var viewMock = dmsMock.CreateView(viewId: 10);
             var elementMock = dmsMock.CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
-            elementMock.Views.Add(viewMock.Object);
+            elementMock.AddView(viewMock.Object.Id);
 
             // Act
             viewMock.Object.Delete();
@@ -345,7 +372,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var dmsMock = new IDmsMock();
             var viewMock = dmsMock.CreateView(viewId: 10);
             var elementMock = dmsMock.CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
-            elementMock.Views.Add(viewMock.Object);
+            elementMock.AddView(viewMock.Object.Id);
 
             // Act
             elementMock.Object.Delete();
@@ -374,7 +401,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var dmsMock = new IDmsMock();
             var viewMock = dmsMock.CreateView(viewId: 10);
             var serviceMock = dmsMock.CreateAgent(agentId: 1).CreateService(serviceId: 2);
-            serviceMock.Views.Add(viewMock.Object);
+            serviceMock.AddView(viewMock.Object.Id);
 
             // Act
             var services = viewMock.Object.Services;
@@ -390,7 +417,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var dmsMock = new IDmsMock();
             var viewMock = dmsMock.CreateView(viewId: 10);
             var serviceMock = dmsMock.CreateAgent(agentId: 1).CreateService(serviceId: 2);
-            serviceMock.Views.Add(viewMock.Object);
+            serviceMock.AddView(viewMock.Object.Id);
 
             // Act
             serviceMock.Object.Delete();

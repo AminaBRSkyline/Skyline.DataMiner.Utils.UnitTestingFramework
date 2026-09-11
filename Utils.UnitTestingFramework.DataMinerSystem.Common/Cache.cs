@@ -8,33 +8,101 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
 {
     using System.Collections.Generic;
 
+    using Skyline.DataMiner.Core.DataMinerSystem.Common;
+
     internal sealed class Cache
     {
-        private readonly List<IDmaMock> dmaMocks = new List<IDmaMock>();
-        private readonly List<IDmsElementMock> elementMocks = new List<IDmsElementMock>();
-        private readonly List<IDmsServiceMock> serviceMocks = new List<IDmsServiceMock>();
-        private readonly List<IDmsViewMock> viewMocks = new List<IDmsViewMock>();
+        private IDmsMock dmsMock;
+        private readonly Dictionary<int, IDmaMock> dmaMocksById = new Dictionary<int, IDmaMock>();
+        private readonly Dictionary<string, IDmaMock> dmaMocksByName = new Dictionary<string, IDmaMock>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<DmsElementId, IDmsElementMock> elementMocksById = new Dictionary<DmsElementId, IDmsElementMock>();
+        private readonly Dictionary<string, IDmsElementMock> elementMocksByName = new Dictionary<string, IDmsElementMock>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<DmsServiceId, IDmsServiceMock> serviceMocksById = new Dictionary<DmsServiceId, IDmsServiceMock>();
+        private readonly Dictionary<string, IDmsServiceMock> serviceMocksByName = new Dictionary<string, IDmsServiceMock>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<int, IDmsViewMock> viewMocksById = new Dictionary<int, IDmsViewMock>();
+        private readonly Dictionary<string, IDmsViewMock> viewMocksByName = new Dictionary<string, IDmsViewMock>(StringComparer.OrdinalIgnoreCase);
+
+        internal void AddDms(IDmsMock dmsMock)
+        {
+            if (this.dmsMock != null)
+            {
+                throw new InvalidOperationException("A DataMiner System mock is already present in the cache.");
+            }
+
+            this.dmsMock = dmsMock;
+        }
+
+        internal IDmsMock GetDms()
+        {
+            return dmsMock;
+        }
 
         internal void AddDma(IDmaMock dmaMock)
         {
-            dmaMocks.Add(dmaMock);
+            if (dmaMocksById.ContainsKey(dmaMock.Object.Id))
+            {
+                throw new ArgumentException("A DataMiner Agent with the specified ID already exists.", nameof(dmaMock));
+            }
+
+            if (dmaMocksByName.ContainsKey(dmaMock.Object.Name))
+            {
+                throw new ArgumentException("A DataMiner Agent with the specified name already exists.", nameof(dmaMock));
+            }
+
+            dmaMocksById.Add(dmaMock.Object.Id, dmaMock);
+            dmaMocksByName.Add(dmaMock.Object.Name, dmaMock);
         }
         internal void AddView(IDmsViewMock viewMock)
         {
-            viewMocks.Add(viewMock);
+            if (viewMocksById.ContainsKey(viewMock.Object.Id))
+            {
+                throw new ArgumentException("A view with the specified ID already exists.", nameof(viewMock));
+            }
+
+            if (viewMocksByName.ContainsKey(viewMock.Object.Name))
+            {
+                throw new ArgumentException("A view with the specified name already exists.", nameof(viewMock));
+            }
+
+            viewMocksById.Add(viewMock.Object.Id, viewMock);
+            viewMocksByName.Add(viewMock.Object.Name, viewMock);
         }
+
         internal IDmsViewMock GetView(int viewId)
         {
-            return viewMocks.FirstOrDefault(view => view.Object.Id == viewId);
+            viewMocksById.TryGetValue(viewId, out var viewMock);
+
+            return viewMock;
         }
+
         internal IDmsViewMock GetView(string name)
         {
-            return viewMocks.FirstOrDefault(view => String.Equals(view.Object.Name, name, StringComparison.OrdinalIgnoreCase));
+            viewMocksByName.TryGetValue(name, out var viewMock);
+
+            return viewMock;
         }
 
         internal ICollection<IDmsViewMock> GetViews()
         {
-            return viewMocks.ToList();
+            return viewMocksById.Values.ToList();
+        }
+
+        internal void UpdateViewName(int viewId, string oldName, string newName)
+        {
+            var viewMock = GetView(viewId);
+
+            if (viewMock == null)
+            {
+                return;
+            }
+
+            if (viewMocksByName.TryGetValue(newName, out var existingViewMock) && !ReferenceEquals(existingViewMock, viewMock))
+            {
+                throw new ArgumentException("A view with the specified name already exists.", nameof(newName));
+            }
+
+            viewMocksByName.Remove(oldName);
+            viewMocksByName.Add(newName, viewMock);
         }
 
         internal bool RemoveView(int viewId)
@@ -46,25 +114,47 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 return false;
             }
 
-            foreach (var elementMock in elementMocks)
+            foreach (var elementMock in elementMocksById.Values)
             {
-                elementMock.Views.Remove(viewMock.Object);
+                elementMock.ViewIds.Remove(viewId);
             }
 
-            foreach (var serviceMock in serviceMocks)
+            foreach (var serviceMock in serviceMocksById.Values)
             {
-                serviceMock.Views.Remove(viewMock.Object);
+                serviceMock.ViewIds.Remove(viewId);
             }
 
-            return viewMocks.Remove(viewMock);
+            if (viewMock.ParentViewId.HasValue)
+            {
+                GetView(viewMock.ParentViewId.Value)?.ChildViewIds.Remove(viewId);
+            }
+
+            foreach (var childViewId in viewMock.ChildViewIds.ToList())
+            {
+                var childViewMock = GetView(childViewId);
+
+                if (childViewMock != null)
+                {
+                    childViewMock.ParentViewId = null;
+                }
+            }
+
+            viewMocksByName.Remove(viewMock.Object.Name);
+
+            return viewMocksById.Remove(viewId);
         }
         internal IDmaMock GetDma(int agentId)
         {
-            return dmaMocks.FirstOrDefault(dma => dma.Object.Id == agentId);
+            dmaMocksById.TryGetValue(agentId, out var dmaMock);
+
+            return dmaMock;
         }
+
         internal IDmaMock GetDma(string name)
         {
-            return dmaMocks.FirstOrDefault(dma => dma.Object.Name == name);
+            dmaMocksByName.TryGetValue(name, out var dmaMock);
+
+            return dmaMock;
         }
         internal bool RemoveDma(int agentId)
         {
@@ -75,81 +165,212 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 return false;
             }
 
-            elementMocks.RemoveAll(element => element.Object.AgentId == agentId);
-            serviceMocks.RemoveAll(service => service.Object.AgentId == agentId);
+            foreach (var elementMock in GetElements(agentId).ToList())
+            {
+                RemoveElement(agentId, elementMock.Object.Id);
+            }
 
-            return dmaMocks.Remove(dmaMock);
+            foreach (var serviceMock in GetServices(agentId).ToList())
+            {
+                RemoveService(agentId, serviceMock.Object.Id);
+            }
+
+            dmaMocksByName.Remove(dmaMock.Object.Name);
+
+            return dmaMocksById.Remove(agentId);
         }
+
         internal void AddElement(IDmsElementMock elementMock)
         {
-            elementMocks.Add(elementMock);
+            var elementId = elementMock.Object.DmsElementId;
+
+            if (elementMocksById.ContainsKey(elementId))
+            {
+                throw new ArgumentException("An element with the specified ID already exists.", nameof(elementMock));
+            }
+
+            if (elementMocksByName.ContainsKey(elementMock.Object.Name))
+            {
+                throw new ArgumentException("An element with the specified name already exists.", nameof(elementMock));
+            }
+
+            elementMocksById.Add(elementId, elementMock);
+            elementMocksByName.Add(elementMock.Object.Name, elementMock);
+
+            var dmaMock = GetDma(elementId.AgentId);
+
+            if (dmaMock != null && !dmaMock.ElementIds.Contains(elementId.ElementId))
+            {
+                dmaMock.ElementIds.Add(elementId.ElementId);
+            }
         }
+
         internal IDmsElementMock GetElement(int agentId, int elementId)
         {
-            return elementMocks.FirstOrDefault(element => element.Object.AgentId == agentId && element.Object.Id == elementId);
+            elementMocksById.TryGetValue(new DmsElementId(agentId, elementId), out var elementMock);
+
+            return elementMock;
         }
+
         internal IDmsElementMock GetElement(int agentId, string name)
         {
-            return elementMocks.FirstOrDefault(element => element.Object.AgentId == agentId && element.Object.Name == name);
+            var elementMock = GetElement(name);
+
+            return elementMock != null && elementMock.Object.AgentId == agentId ? elementMock : null;
         }
+
+        internal IDmsElementMock GetElement(string name)
+        {
+            elementMocksByName.TryGetValue(name, out var elementMock);
+
+            return elementMock;
+        }
+
+        internal void UpdateElementName(int agentId, int elementId, string oldName, string newName)
+        {
+            var elementMock = GetElement(agentId, elementId);
+
+            if (elementMock == null)
+            {
+                return;
+            }
+
+            if (elementMocksByName.TryGetValue(newName, out var existingElementMock) && !ReferenceEquals(existingElementMock, elementMock))
+            {
+                throw new ArgumentException("An element with the specified name already exists.", nameof(newName));
+            }
+
+            elementMocksByName.Remove(oldName);
+            elementMocksByName.Add(newName, elementMock);
+        }
+
         internal bool RemoveElement(int agentId, int elementId)
         {
             var elementMock = GetElement(agentId, elementId);
 
-            return elementMock != null && elementMocks.Remove(elementMock);
+            if (elementMock == null)
+            {
+                return false;
+            }
+
+            foreach (var viewMock in viewMocksById.Values)
+            {
+                viewMock.ElementIds.RemoveAll(dmsElementId => dmsElementId.AgentId == agentId && dmsElementId.ElementId == elementId);
+            }
+
+            GetDma(agentId)?.ElementIds.Remove(elementId);
+            elementMocksByName.Remove(elementMock.Object.Name);
+
+            return elementMocksById.Remove(new DmsElementId(agentId, elementId));
         }
+
         internal ICollection<IDmsElementMock> GetElements(int agentId)
         {
-            return elementMocks.Where(element => element.Object.AgentId == agentId).ToList();
+            return elementMocksById.Values.Where(element => element.Object.AgentId == agentId).ToList();
         }
-        internal IDmsElementMock GetElement(string name)
-        {
-            return elementMocks.FirstOrDefault(element => element.Object.Name == name);
-        }
+
         internal ICollection<IDmaMock> GetDmas()
         {
-            return dmaMocks.ToList();
+            return dmaMocksById.Values.ToList();
         }
+
         internal ICollection<IDmsElementMock> GetElements()
         {
-            return elementMocks.ToList();
+            return elementMocksById.Values.ToList();
         }
 
         internal void AddService(IDmsServiceMock serviceMock)
         {
-            serviceMocks.Add(serviceMock);
+            var serviceId = serviceMock.Object.DmsServiceId;
+
+            if (serviceMocksById.ContainsKey(serviceId))
+            {
+                throw new ArgumentException("A service with the specified ID already exists.", nameof(serviceMock));
+            }
+
+            if (serviceMocksByName.ContainsKey(serviceMock.Object.Name))
+            {
+                throw new ArgumentException("A service with the specified name already exists.", nameof(serviceMock));
+            }
+
+            serviceMocksById.Add(serviceId, serviceMock);
+            serviceMocksByName.Add(serviceMock.Object.Name, serviceMock);
+
+            var dmaMock = GetDma(serviceId.AgentId);
+
+            if (dmaMock != null && !dmaMock.ServiceIds.Contains(serviceId.ServiceId))
+            {
+                dmaMock.ServiceIds.Add(serviceId.ServiceId);
+            }
         }
 
         internal IDmsServiceMock GetService(int agentId, int serviceId)
         {
-            return serviceMocks.FirstOrDefault(service => service.Object.AgentId == agentId && service.Object.Id == serviceId);
+            serviceMocksById.TryGetValue(new DmsServiceId(agentId, serviceId), out var serviceMock);
+
+            return serviceMock;
         }
 
         internal IDmsServiceMock GetService(int agentId, string name)
         {
-            return serviceMocks.FirstOrDefault(service => service.Object.AgentId == agentId && String.Equals(service.Object.Name, name, StringComparison.OrdinalIgnoreCase));
+            var serviceMock = GetService(name);
+
+            return serviceMock != null && serviceMock.Object.AgentId == agentId ? serviceMock : null;
         }
 
         internal IDmsServiceMock GetService(string name)
         {
-            return serviceMocks.FirstOrDefault(service => String.Equals(service.Object.Name, name, StringComparison.OrdinalIgnoreCase));
+            serviceMocksByName.TryGetValue(name, out var serviceMock);
+
+            return serviceMock;
+        }
+
+        internal void UpdateServiceName(int agentId, int serviceId, string oldName, string newName)
+        {
+            var serviceMock = GetService(agentId, serviceId);
+
+            if (serviceMock == null)
+            {
+                return;
+            }
+
+            if (serviceMocksByName.TryGetValue(newName, out var existingServiceMock) && !ReferenceEquals(existingServiceMock, serviceMock))
+            {
+                throw new ArgumentException("A service with the specified name already exists.", nameof(newName));
+            }
+
+            serviceMocksByName.Remove(oldName);
+            serviceMocksByName.Add(newName, serviceMock);
         }
 
         internal ICollection<IDmsServiceMock> GetServices(int agentId)
         {
-            return serviceMocks.Where(service => service.Object.AgentId == agentId).ToList();
+            return serviceMocksById.Values.Where(service => service.Object.AgentId == agentId).ToList();
         }
 
         internal ICollection<IDmsServiceMock> GetServices()
         {
-            return serviceMocks.ToList();
+            return serviceMocksById.Values.ToList();
         }
 
         internal bool RemoveService(int agentId, int serviceId)
         {
             var serviceMock = GetService(agentId, serviceId);
 
-            return serviceMock != null && serviceMocks.Remove(serviceMock);
+            if (serviceMock == null)
+            {
+                return false;
+            }
+
+            foreach (var viewMock in viewMocksById.Values)
+            {
+                viewMock.ServiceIds.RemoveAll(dmsServiceId => dmsServiceId.AgentId == agentId && dmsServiceId.ServiceId == serviceId);
+            }
+
+            GetDma(agentId)?.ServiceIds.Remove(serviceId);
+            serviceMocksByName.Remove(serviceMock.Object.Name);
+
+            return serviceMocksById.Remove(new DmsServiceId(agentId, serviceId));
         }
     }
 }

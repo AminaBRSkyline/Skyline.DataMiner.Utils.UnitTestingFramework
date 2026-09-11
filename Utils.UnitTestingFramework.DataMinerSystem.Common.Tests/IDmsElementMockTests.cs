@@ -1826,6 +1826,68 @@
         }
 
         [TestMethod]
+        public void Exists_ElementIsDeleted_ReturnsFalse()
+        {
+            // Arrange
+            var mock = new IDmsMock().CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
+
+            // Act & Assert
+            Assert.IsTrue(mock.Object.Exists());
+
+            mock.Object.Delete();
+
+            Assert.IsFalse(mock.Object.Exists());
+        }
+
+        [TestMethod]
+        public void Update_ExistingElement_DoesNotThrowException()
+        {
+            // Arrange
+            var mock = new IDmsMock().CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
+
+            // Act
+            mock.Object.Update();
+
+            // Assert
+            Assert.IsTrue(mock.Object.Exists());
+        }
+
+        [TestMethod]
+        public void Update_DeletedElement_ThrowsElementNotFoundException()
+        {
+            // Arrange
+            var mock = new IDmsMock().CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
+            mock.Object.Delete();
+
+            // Act & Assert
+            Assert.ThrowsExactly<ElementNotFoundException>(() => mock.Object.Update());
+        }
+
+        [TestMethod]
+        public void Duplicate_AgentFromDifferentDms_ThrowsAgentNotFoundException()
+        {
+            // Arrange
+            var sourceElementMock = new IDmsMock().CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
+            var foreignAgentMock = new IDmsMock().CreateAgent(agentId: 2);
+
+            // Act & Assert
+            Assert.ThrowsExactly<AgentNotFoundException>(() => sourceElementMock.Object.Duplicate("Duplicated Element", foreignAgentMock.Object));
+        }
+
+        [TestMethod]
+        public void AddView_DeletedElement_ThrowsElementNotFoundException()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var viewMock = dmsMock.CreateView(viewId: 10);
+            var elementMock = dmsMock.CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1);
+            elementMock.Object.Delete();
+
+            // Act & Assert
+            Assert.ThrowsExactly<ElementNotFoundException>(() => elementMock.AddView(viewMock.Object.Id));
+        }
+
+        [TestMethod]
         public void StartNameMonitor_NameChanges_InvokesCallback()
         {
             // Arrange

@@ -20,7 +20,14 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         private readonly int id;
         private AlarmLevel alarmLevel = AlarmLevel.Undefined;
         private string name;
-        private IDmsView parent;
+
+        internal int? ParentViewId { get; set; }
+
+        internal List<int> ChildViewIds { get; } = new List<int>();
+
+        internal List<DmsElementId> ElementIds { get; } = new List<DmsElementId>();
+
+        internal List<DmsServiceId> ServiceIds { get; } = new List<DmsServiceId>();
 
         /// <summary>
         /// Gets or sets the display string returned by the mock.
@@ -60,13 +67,26 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         {
             get
             {
-                return parent;
+                return ParentViewId.HasValue ? cache.GetView(ParentViewId.Value)?.Object : null;
             }
 
             set
             {
                 ValidateParent(value);
-                parent = value;
+
+                if (ParentViewId.HasValue)
+                {
+                    cache.GetView(ParentViewId.Value)?.ChildViewIds.Remove(id);
+                }
+
+                ParentViewId = value.Id;
+
+                var parentMock = cache.GetView(value.Id);
+
+                if (!parentMock.ChildViewIds.Contains(id))
+                {
+                    parentMock.ChildViewIds.Add(id);
+                }
             }
         }
 
@@ -79,19 +99,23 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             this.name = name;
 
             Setup(view => view.Id).Returns(id);
+            Setup(view => view.Dms).Returns(() => cache.GetDms().Object);
             Setup(view => view.Display).Returns(() => Display);
-            Setup(view => view.Elements).Returns(() => this.cache.GetElements().Where(elementMock => elementMock.Views.Contains(Object)).Select(elementMock => elementMock.Object).ToList().AsReadOnly());
-            Setup(view => view.Services).Returns(() => this.cache.GetServices().Where(serviceMock => serviceMock.Views.Contains(Object)).Select(serviceMock => serviceMock.Object).ToList().AsReadOnly());
+            Setup(view => view.Elements).Returns(() => ElementIds.Select(elementId => cache.GetElement(elementId.AgentId, elementId.ElementId)).Where(elementMock => elementMock != null).Select(elementMock => elementMock.Object).ToList().AsReadOnly());
+            Setup(view => view.Services).Returns(() => ServiceIds.Select(serviceId => cache.GetService(serviceId.AgentId, serviceId.ServiceId)).Where(serviceMock => serviceMock != null).Select(serviceMock => serviceMock.Object).ToList().AsReadOnly());
             Setup(view => view.Properties).Returns(() => Properties);
             Setup(view => view.Parent).Returns(() => Parent);
             SetupSet(view => view.Parent = It.IsAny<IDmsView>()).Callback((IDmsView value) => Parent = value);
-            Setup(view => view.ChildViews).Returns(() => this.cache.GetViews().Where(viewMock => ReferenceEquals(viewMock.Parent, Object)).Select(viewMock => viewMock.Object).ToList().AsReadOnly());
+            Setup(view => view.ChildViews).Returns(() => ChildViewIds.Select(childViewId => cache.GetView(childViewId)).Where(viewMock => viewMock != null).Select(viewMock => viewMock.Object).ToList().AsReadOnly());
             Setup(view => view.Name).Returns(() => this.name);
             SetupSet(view => view.Name = It.IsAny<string>()).Callback((string value) =>
             {
                 ValidateName(value);
+                cache.UpdateViewName(id, this.name, value);
                 this.name = value;
             });
+            Setup(view => view.Exists()).Returns(() => cache.GetView(id) != null);
+            Setup(view => view.Update()).Callback(() => { });
             Setup(view => view.Delete()).Callback(() => this.cache.RemoveView(id));
             Setup(view => view.GetAlarmLevel()).Returns(() => AlarmLevel);
         }
@@ -111,6 +135,13 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             if (value.Id == id)
             {
                 throw new NotSupportedException("A view cannot be its own parent.");
+            }
+
+            var parentMock = cache.GetView(value.Id);
+
+            if (parentMock == null || !ReferenceEquals(parentMock.Object, value))
+            {
+                throw new ArgumentException("The parent view does not belong to this DataMiner System.", nameof(value));
             }
         }
 

@@ -168,10 +168,7 @@
 
         public IPropertyCollection<IDmsElementProperty, IDmsElementPropertyDefinition> Properties { get; set; } = CreateEmptyPropertyCollection<IDmsElementProperty, IDmsElementPropertyDefinition>();
 
-        /// <summary>
-        /// Gets or sets the views the element is part of.
-        /// </summary>
-        public ISet<IDmsView> Views { get; set; } = new HashSet<IDmsView>();
+        internal List<int> ViewIds { get; } = new List<int>();
 
         public IReplicationSettings ReplicationSettings { get; set; } = new Mock<IReplicationSettings>().Object;
 
@@ -179,6 +176,32 @@
         /// Gets or sets the spectrum analyzer component returned by the mock.
         /// </summary>
         public IDmsSpectrumAnalyzer SpectrumAnalyzer { get; set; }
+
+        /// <summary>
+        /// Adds this element to the specified view.
+        /// </summary>
+        /// <param name="viewId">The view ID.</param>
+        public void AddView(int viewId)
+        {
+            EnsureElementExists(agentId, id);
+
+            var viewMock = cache.GetView(viewId);
+
+            if (viewMock == null)
+            {
+                throw new ViewNotFoundException(viewId);
+            }
+
+            if (!ViewIds.Contains(viewId))
+            {
+                ViewIds.Add(viewId);
+            }
+
+            if (!viewMock.ElementIds.Any(elementId => elementId.AgentId == agentId && elementId.ElementId == id))
+            {
+                viewMock.ElementIds.Add(new DmsElementId(agentId, id));
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IDmsElementMock"/> class.
@@ -202,6 +225,7 @@
             Setup(e => e.AgentId).Returns(agentId);
 
             Setup(e => e.DmsElementId).Returns(new DmsElementId(agentId, id));
+            Setup(e => e.Host).Returns(() => cache.GetDma(agentId)?.Object);
 
             ValidateName(name);
 
@@ -209,7 +233,7 @@
 
             Setup(e => e.Name).Returns(() => elementName);
 
-            SetupSet(e => e.Name = It.IsAny<string>()).Callback((string value) => { ValidateName(value); elementName = value; NotifyNameChanged(value); });
+            SetupSet(e => e.Name = It.IsAny<string>()).Callback((string value) => { ValidateName(value); this.cache.UpdateElementName(agentId, id, elementName, value); elementName = value; NotifyNameChanged(value); });
 
             Setup(e => e.Description).Returns(() => Description);
             SetupSet(e => e.Description = It.IsAny<string>()).Callback((string value) => Description = value);
@@ -277,7 +301,9 @@
             Setup(element => element.Properties).Returns(() => Properties);
             Setup(element => element.ReplicationSettings).Returns(() => ReplicationSettings);
             Setup(element => element.SpectrumAnalyzer).Returns(() => SpectrumAnalyzer);
-            Setup(element => element.Views).Returns(() => Views);
+            Setup(element => element.Views).Returns(() => new HashSet<IDmsView>(ViewIds.Select(viewId => cache.GetView(viewId)).Where(viewMock => viewMock != null).Select(viewMock => viewMock.Object)));
+            Setup(element => element.Exists()).Returns(() => cache.GetElement(agentId, id) != null && State != ElementState.Deleted);
+            Setup(element => element.Update()).Callback(() => EnsureElementExists(agentId, id));
 
             Setup(element => element.Duplicate(It.IsAny<string>(), It.IsAny<IDma>())).Returns((string newElementName, IDma agent) => Duplicate(newElementName, agent));
 
@@ -322,8 +348,9 @@
                 throw new ArgumentNullException(nameof(agent));
             }
 
-            var targetAgentMock = Mock.Get(agent) as IDmaMock;
-            if (targetAgentMock == null)
+            var targetAgentMock = cache.GetDma(agent.Id);
+
+            if (targetAgentMock == null || !ReferenceEquals(targetAgentMock.Object, agent))
             {
                 throw new AgentNotFoundException(agent.Id);
             }
@@ -430,7 +457,7 @@
 
         private void EnsureElementExists(int agentId, int id)
         {
-            if (state == ElementState.Deleted)
+            if (cache.GetElement(agentId, id) == null || state == ElementState.Deleted)
             {
                 throw new ElementNotFoundException(agentId, id);
             }

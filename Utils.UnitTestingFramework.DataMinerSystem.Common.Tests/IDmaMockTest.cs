@@ -260,6 +260,55 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        public void CreateService_Configuration_CreatesServiceAndReturnsId()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(agentId: 1);
+            var viewMock = dmsMock.CreateView(viewId: 10);
+            var configuration = new ServiceConfiguration(dmsMock.Object, "Configured Service") { Description = "Service Description" };
+            configuration.Views.Add(viewMock.Object);
+
+            // Act
+            var serviceId = dmaMock.Object.CreateService(configuration);
+            var service = dmaMock.Object.GetService(serviceId);
+
+            // Assert
+            Assert.AreEqual(new DmsServiceId(1, 1), serviceId);
+            Assert.AreEqual("Configured Service", service.Name);
+            Assert.AreEqual("Service Description", service.Description);
+            Assert.AreSame(dmaMock.Object, service.Host);
+            Assert.AreSame(viewMock.Object, service.Views.Single());
+            Assert.AreSame(service, viewMock.Object.Services.Single());
+        }
+
+        [TestMethod]
+        public void CreateService_NullConfiguration_ThrowsArgumentNullException()
+        {
+            // Arrange
+            var dmaMock = new IDmsMock().CreateAgent(agentId: 1);
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => dmaMock.Object.CreateService(null));
+        }
+
+        [TestMethod]
+        public void CreateService_ConfigurationWithForeignView_ThrowsIncorrectDataExceptionAndDoesNotCreateService()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(agentId: 1);
+            dmsMock.CreateView(viewId: 10, name: "Local View");
+            var foreignViewMock = new IDmsMock().CreateView(viewId: 10, name: "Foreign View");
+            var configuration = new ServiceConfiguration(dmsMock.Object, "Configured Service");
+            configuration.Views.Add(foreignViewMock.Object);
+
+            // Act & Assert
+            Assert.ThrowsExactly<IncorrectDataException>(() => dmaMock.Object.CreateService(configuration));
+            Assert.IsEmpty(dmaMock.Object.GetServices());
+        }
+
+        [TestMethod]
         public void ServiceExists_ExistingDmsServiceId_ReturnsTrue()
         {
             // Arrange
@@ -402,6 +451,36 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        public void ElementExists_ElementHostedOnDifferentDma_ReturnsFalse()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var firstDmaMock = dmsMock.CreateAgent(agentId: 1);
+            var secondDmaMock = dmsMock.CreateAgent(agentId: 2);
+            var elementMock = secondDmaMock.CreateElement(path, id: 123, agentId: 2, name: "Element");
+
+            // Act
+            var exists = firstDmaMock.Object.ElementExists(elementMock.Object.DmsElementId);
+
+            // Assert
+            Assert.IsFalse(exists);
+        }
+
+        [TestMethod]
+        [DataRow(0, 1)]
+        [DataRow(1, 0)]
+        [DataRow(-1, 1)]
+        [DataRow(1, -1)]
+        public void ElementExists_InvalidDmsElementId_ThrowsArgumentException(int agentId, int elementId)
+        {
+            // Arrange
+            var dmaMock = new IDmsMock().CreateAgent(agentId: 1);
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => dmaMock.Object.ElementExists(new DmsElementId(agentId, elementId)));
+        }
+
+        [TestMethod]
         public void ElementExists_ExistingName_ReturnsTrue()
         {
             // Arrange
@@ -430,6 +509,28 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        public void ElementExists_NullName_ThrowsArgumentNullException()
+        {
+            // Arrange
+            var dmaMock = new IDmsMock().CreateAgent(agentId: 1);
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => dmaMock.Object.ElementExists((string)null));
+        }
+
+        [TestMethod]
+        [DataRow("")]
+        [DataRow("   ")]
+        public void ElementExists_EmptyOrWhiteSpaceName_ThrowsArgumentException(string elementName)
+        {
+            // Arrange
+            var dmaMock = new IDmsMock().CreateAgent(agentId: 1);
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => dmaMock.Object.ElementExists(elementName));
+        }
+
+        [TestMethod]
         public void GetElement_ExistingDmsElementId_ReturnsCreatedElement()
         {
             // Arrange
@@ -452,6 +553,33 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act & Assert
             Assert.ThrowsExactly<ElementNotFoundException>(() => dmaMock.Object.GetElement(unknownElementId));
+        }
+
+        [TestMethod]
+        public void GetElement_ElementHostedOnDifferentDma_ThrowsElementNotFoundException()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var firstDmaMock = dmsMock.CreateAgent(agentId: 1);
+            var secondDmaMock = dmsMock.CreateAgent(agentId: 2);
+            var elementMock = secondDmaMock.CreateElement(path, id: 123, agentId: 2, name: "Element");
+
+            // Act & Assert
+            Assert.ThrowsExactly<ElementNotFoundException>(() => firstDmaMock.Object.GetElement(elementMock.Object.DmsElementId));
+        }
+
+        [TestMethod]
+        [DataRow(0, 1)]
+        [DataRow(1, 0)]
+        [DataRow(-1, 1)]
+        [DataRow(1, -1)]
+        public void GetElement_InvalidDmsElementId_ThrowsArgumentException(int agentId, int elementId)
+        {
+            // Arrange
+            var dmaMock = new IDmsMock().CreateAgent(agentId: 1);
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => dmaMock.Object.GetElement(new DmsElementId(agentId, elementId)));
         }
 
         [TestMethod]

@@ -32,6 +32,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         public IDmsMock()
         {
             cache = new Cache();
+            cache.AddDms(this);
             Setup(dms => dms.Communication).Returns(() => Communication);
             Setup(dms => dms.ElementPropertyDefinitions).Returns(() => ElementPropertyDefinitions);
             Setup(dms => dms.ServicePropertyDefinitions).Returns(() => ServicePropertyDefinitions);
@@ -55,11 +56,18 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                     throw new ArgumentException("The DataMiner Agent ID cannot be negative.", nameof(agentId));
                 }
 
-                var dmaMock = cache.GetDma(agentId) ?? new IDmaMock(cache, agentId);
+                var dmaMock = cache.GetDma(agentId);
 
-                dmaMock.Setup(dma => dma.Dms).Returns(Object);
+                if (dmaMock != null)
+                {
+                    return dmaMock.Object;
+                }
 
-                return dmaMock.Object;
+                var referenceMock = new Mock<IDma>();
+                referenceMock.Setup(dma => dma.Id).Returns(agentId);
+                referenceMock.Setup(dma => dma.Dms).Returns(Object);
+
+                return referenceMock.Object;
             });
             Setup(dms => dms.GetAgents()).Returns(() => cache.GetDmas().Select(dma => dma.Object).ToList());
             Setup(dms => dms.ElementExists(It.IsAny<DmsElementId>())).Returns((DmsElementId elementId) =>
@@ -78,6 +86,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             });
             Setup(dms => dms.GetElement(It.IsAny<DmsElementId>())).Returns((DmsElementId elementId) =>
             {
+                ValidateElementId(elementId);
+
                 var elementMock = cache.GetElement(elementId.AgentId, elementId.ElementId);
 
                 if (elementMock == null || elementMock.Object.State == ElementState.Deleted)
@@ -217,8 +227,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         {
             var dmaMock = new IDmaMock(cache, agentId, name);
 
-            dmaMock.Setup(dma => dma.Dms).Returns(Object);
-
             cache.AddDma(dmaMock);
 
             return dmaMock;
@@ -240,8 +248,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             }
 
             var viewMock = new IDmsViewMock(cache, viewId, name);
-
-            viewMock.Setup(view => view.Dms).Returns(Object);
 
             cache.AddView(viewMock);
 
@@ -279,6 +285,14 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             var viewIds = cache.GetViews().Select(view => view.Object.Id).Where(viewId => viewId > 0).ToList();
 
             return viewIds.Count == 0 ? 1 : viewIds.Max() + 1;
+        }
+
+        private static void ValidateElementId(DmsElementId elementId)
+        {
+            if (elementId.AgentId < 1 || elementId.ElementId < 1)
+            {
+                throw new ArgumentException("The DataMiner Agent ID and element ID must be positive.", nameof(elementId));
+            }
         }
 
         private static void ValidateElementName(string elementName)
