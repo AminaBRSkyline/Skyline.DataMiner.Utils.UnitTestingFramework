@@ -12,6 +12,7 @@
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Templates;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
+    using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
 
     /// <summary>
     /// A pre-arranged mock of <see cref="IDmsElement"/>.
@@ -39,6 +40,8 @@
         private readonly ParametersAndTables parametersAndTables;
         private readonly Dictionary<int, object> tableMocks = new Dictionary<int, object>();
         private readonly Dictionary<string, object> standaloneParameterMocks = new Dictionary<string, object>();
+        private readonly string protocolName;
+        private readonly string protocolVersion;
         /// Gets or sets the number of active alarms returned by the mock.
         public int ActiveAlarmCount
         {
@@ -140,8 +143,7 @@
         public string Type { get; set; } = String.Empty;
 
         /// Gets or sets the protocol returned by the mock.
-        public IDmsProtocol Protocol { get; set; } = new Mock<IDmsProtocol>().Object;
-
+        public IDmsProtocol Protocol => cache.GetProtocol(protocolName, protocolVersion)?.Object;
         /// Gets or sets the alarm template returned by the mock.
         public IDmsAlarmTemplate AlarmTemplate { get; set; }
 
@@ -210,13 +212,24 @@
         /// <param name="id">The element ID.</param>
         /// <param name="agentId">The DataMiner Agent ID.</param>
         /// <param name="name">The element name.</param>
-        internal IDmsElementMock(Cache cache, string pathToProtocolXml, int id = 0, int agentId = 0, string name = "Element")
+        internal IDmsElementMock(Cache cache, string pathToProtocolXml, int id = 0, int agentId = 0, string name = "Element", IProtocolModel protocolModel = null)
         {
             this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
             this.pathToProtocolXml = pathToProtocolXml;
             this.id = id;
             this.agentId = agentId;
-            parametersAndTables = ParametersAndTablesBuilder.Build(pathToProtocolXml);
+            protocolModel = protocolModel ?? ProtocolModelBuilder.Build(pathToProtocolXml);
+            parametersAndTables = ParametersAndTablesBuilder.Build(protocolModel);
+
+            var protocolMock = cache.GetProtocol(protocolModel.Protocol.Name.Value, protocolModel.Protocol.Version.Value);
+            if (protocolMock == null)
+            {
+                protocolMock = new IDmsProtocolMock(protocolModel, pathToProtocolXml);
+                cache.AddProtocol(protocolMock);
+            }
+
+            protocolName = protocolMock.Name;
+            protocolVersion = protocolMock.ReferencedVersion;
 
             Setup(e => e.AdvancedSettings).Returns(() => AdvancedSettings);
 
@@ -358,7 +371,6 @@
             var duplicate = targetAgentMock.CreateElement(pathToProtocolXml, targetAgentMock.GetNextElementId(), agent.Id, newElementName);
             duplicate.Description = Description;
             duplicate.Type = Type;
-            duplicate.Protocol = Protocol;
             duplicate.AlarmTemplate = AlarmTemplate;
             duplicate.TrendTemplate = TrendTemplate;
             duplicate.DveSettings = DveSettings;

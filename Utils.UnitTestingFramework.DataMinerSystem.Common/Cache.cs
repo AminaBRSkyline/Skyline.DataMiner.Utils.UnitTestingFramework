@@ -22,6 +22,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         private readonly Dictionary<int, IDmsViewMock> viewMocksById = new Dictionary<int, IDmsViewMock>();
         private readonly Dictionary<string, IDmsViewMock> viewMocksByName = new Dictionary<string, IDmsViewMock>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly Dictionary<string, Dictionary<string, IDmsProtocolMock>> protocolMocksByName = new Dictionary<string, Dictionary<string, IDmsProtocolMock>>(StringComparer.OrdinalIgnoreCase);
+
         internal void AddDms(IDmsMock dmsMock)
         {
             if (this.dmsMock != null)
@@ -37,6 +39,52 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             return dmsMock;
         }
 
+        internal void AddProtocol(IDmsProtocolMock protocolMock)
+        {
+            if (!protocolMocksByName.TryGetValue(protocolMock.Name, out var versions))
+            {
+                versions = new Dictionary<string, IDmsProtocolMock>(StringComparer.OrdinalIgnoreCase);
+                protocolMocksByName.Add(protocolMock.Name, versions);
+            }
+
+            if (versions.ContainsKey(protocolMock.ReferencedVersion))
+            {
+                throw new ArgumentException("A protocol with the specified name and version already exists.", nameof(protocolMock));
+            }
+
+            versions.Add(protocolMock.ReferencedVersion, protocolMock);
+        }
+
+        internal IDmsProtocolMock GetProtocol(string name, string referencedVersion)
+        {
+            if (!protocolMocksByName.TryGetValue(name, out var versions))
+            {
+                return null;
+            }
+
+            versions.TryGetValue(referencedVersion, out var protocolMock);
+            return protocolMock;
+        }
+
+        internal IDmsProtocolMock GetProtocol(string name)
+        {
+            if (!protocolMocksByName.TryGetValue(name, out var versions))
+            {
+                return null;
+            }
+
+            if (versions.Count != 1)
+            {
+                throw new InvalidOperationException($"More than one version of protocol '{name}' is available. Specify a version.");
+            }
+
+            return versions.Values.Single();
+        }
+
+        internal ICollection<IDmsProtocolMock> GetProtocols()
+        {
+            return protocolMocksByName.Values.SelectMany(versions => versions.Values).ToList();
+        }
         internal void AddDma(IDmaMock dmaMock)
         {
             if (dmaMocksById.ContainsKey(dmaMock.Object.Id))

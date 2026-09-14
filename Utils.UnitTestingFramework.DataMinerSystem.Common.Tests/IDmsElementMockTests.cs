@@ -939,21 +939,21 @@
         }
 
         [TestMethod]
-        public void Protocol_CustomValue_ReturnsProvidedInstance()
+        public void Protocol_ElementsUsingSameProtocol_ReturnSameCachedInstance()
         {
             // Arrange
-            var expectedProtocol = new Mock<IDmsProtocol>();
-            expectedProtocol.Setup(p => p.Name).Returns("Custom Protocol");
-
-            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
-            mock.Protocol = expectedProtocol.Object;
+            var dmaMock = new IDmsMock().CreateAgent(agentId: 1);
+            var first = dmaMock.CreateElement(path, id: 1, agentId: 1, name: "First Element");
+            var second = dmaMock.CreateElement(path, id: 2, agentId: 1, name: "Second Element");
 
             // Act
-            var protocol = mock.Object.Protocol;
+            var protocol = first.Object.Protocol;
 
             // Assert
-            Assert.AreSame(expectedProtocol.Object, protocol);
-            Assert.AreEqual("Custom Protocol", protocol.Name);
+            Assert.AreSame(protocol, second.Object.Protocol);
+            Assert.AreEqual("UnitTestingFrameworkUseCases", protocol.Name);
+            Assert.AreEqual("1.0.0.1", protocol.ReferencedVersion);
+            Assert.AreEqual(ProtocolType.Virtual, protocol.Type);
         }
 
         [TestMethod]

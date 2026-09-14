@@ -390,6 +390,23 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        public void GetProtocols_TwoElementsUsingSameProtocol_ReturnsOneProtocol()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(agentId: 1);
+            var first = dmaMock.CreateElement(path, id: 1, agentId: 1, name: "First Element");
+            dmaMock.CreateElement(path, id: 2, agentId: 1, name: "Second Element");
+
+            // Act
+            var protocols = dmsMock.Object.GetProtocols();
+
+            // Assert
+            Assert.AreEqual(1, protocols.Count);
+            Assert.AreSame(first.Object.Protocol, protocols.Single());
+        }
+
+        [TestMethod]
         public void GetAgent_NonExistingId_ThrowsAgentNotFoundException()
         {
             // Arrange

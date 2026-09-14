@@ -10,6 +10,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
     using Moq;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
 
     /// <summary>
     /// A pre-arranged mock of <see cref="IDms"/>.
@@ -216,7 +217,42 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 return referenceMock.Object;
             });
             Setup(dms => dms.GetViews()).Returns(() => cache.GetViews().Select(view => view.Object).ToList());
+
+            Setup(dms => dms.GetProtocols()).Returns(() => cache.GetProtocols().Select(protocol => protocol.Object).ToList());
+            Setup(dms => dms.ProtocolExists(It.IsAny<string>(), It.IsAny<string>())).Returns((string protocolName, string protocolVersion) =>
+            {
+                ValidateProtocolIdentifier(protocolName, nameof(protocolName));
+                ValidateProtocolIdentifier(protocolVersion, nameof(protocolVersion));
+                return cache.GetProtocol(protocolName, protocolVersion) != null;
+            });
+            Setup(dms => dms.GetProtocol(It.IsAny<string>(), It.IsAny<string>())).Returns((string protocolName, string protocolVersion) =>
+            {
+                ValidateProtocolIdentifier(protocolName, nameof(protocolName));
+                ValidateProtocolIdentifier(protocolVersion, nameof(protocolVersion));
+                var protocolMock = cache.GetProtocol(protocolName, protocolVersion);
+
+                if (protocolMock == null)
+                {
+                    throw new ProtocolNotFoundException(protocolName, protocolVersion);
+                }
+
+                return protocolMock.Object;
+            });
         }
+
+        internal IDmsProtocolMock AddProtocol(string pathToProtocolXml)
+        {
+            var protocolModel = ProtocolModelBuilder.Build(pathToProtocolXml);
+            var protocolMock = new IDmsProtocolMock(protocolModel, pathToProtocolXml);
+            cache.AddProtocol(protocolMock);
+            return protocolMock;
+        }
+
+        internal IDmsProtocolMock GetProtocolMock(string name, string version = null)
+        {
+            return version == null ? cache.GetProtocol(name) : cache.GetProtocol(name, version);
+        }
+
         /// <summary>
         /// Creates a DataMiner Agent mock that belongs to this DataMiner System.
         /// </summary>
@@ -287,6 +323,18 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             return viewIds.Count == 0 ? 1 : viewIds.Max() + 1;
         }
 
+        private static void ValidateProtocolIdentifier(string value, string parameterName)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(parameterName);
+            }
+
+            if (String.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("The protocol name or version cannot be empty or white space.", parameterName);
+            }
+        }
         private static void ValidateElementId(DmsElementId elementId)
         {
             if (elementId.AgentId < 1 || elementId.ElementId < 1)

@@ -455,8 +455,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var dmsMock = new IDmsMock();
-            var firstDmaMock = dmsMock.CreateAgent(agentId: 1);
-            var secondDmaMock = dmsMock.CreateAgent(agentId: 2);
+            var firstDmaMock = dmsMock.CreateAgent(agentId: 1, name: "First Agent");
+            var secondDmaMock = dmsMock.CreateAgent(agentId: 2, name: "Second Agent");
             var elementMock = secondDmaMock.CreateElement(path, id: 123, agentId: 2, name: "Element");
 
             // Act
@@ -560,8 +560,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var dmsMock = new IDmsMock();
-            var firstDmaMock = dmsMock.CreateAgent(agentId: 1);
-            var secondDmaMock = dmsMock.CreateAgent(agentId: 2);
+            var firstDmaMock = dmsMock.CreateAgent(agentId: 1, name: "First Agent");
+            var secondDmaMock = dmsMock.CreateAgent(agentId: 2, name: "Second Agent");
             var elementMock = secondDmaMock.CreateElement(path, id: 123, agentId: 2, name: "Element");
 
             // Act & Assert

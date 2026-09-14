@@ -13,6 +13,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
     using Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
     using System.Text.RegularExpressions;
+    using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
 
     /// <summary>
     /// A pre-arranged mock of <see cref="IDma"/>.
@@ -173,7 +174,22 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         /// <returns>The created element mock.</returns>
         public IDmsElementMock CreateElement(string pathToProtocolXml, int id = 0, int agentId = 0, string name = "Element")
         {
-            var elementMock = new IDmsElementMock(cache, pathToProtocolXml, id, agentId, name);
+            return CreateElement(pathToProtocolXml, id, agentId, name, null);
+        }
+
+        internal IDmsElementMock CreateElement(IDmsProtocolMock protocolMock, int id, string name)
+        {
+            if (protocolMock == null)
+            {
+                throw new ArgumentNullException(nameof(protocolMock));
+            }
+
+            return CreateElement(protocolMock.PathToProtocolXml, id, Object.Id, name, protocolMock.ProtocolModel);
+        }
+
+        private IDmsElementMock CreateElement(string pathToProtocolXml, int id, int agentId, string name, IProtocolModel protocolModel)
+        {
+            var elementMock = new IDmsElementMock(cache, pathToProtocolXml, id, agentId, name, protocolModel);
 
             cache.AddElement(elementMock);
 
