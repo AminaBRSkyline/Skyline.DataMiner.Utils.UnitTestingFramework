@@ -32,6 +32,30 @@
             // TODO assert
         }
 
+        public void FindOtherViews_ArrangeWithBuilders()
+        {
+            // Arrange
+            // TODO arrange WITHOUT using builders: one dms with one dma with multiple (nested) views, one view should have one element.
+
+            // Act
+            var otherViews = ElementFinder.FindOtherViews(new Mock<IDmsView>().Object);
+
+            // Assert
+            // TODO assert
+        }
+
+        public void FindOtherViews_ArrangeWithoutBuilders()
+        {
+            // Arrange
+            // TODO arrange WITH using builders: one dms with one dma with multiple (nested) views, one view should have one element.
+
+            // Act
+            var otherViews = ElementFinder.FindOtherViews(new Mock<IDmsView>().Object);
+
+            // Assert
+            // TODO assert
+        }
+
         public void Repoll_ArrangeWithBuilders()
         {
             // Arrange
