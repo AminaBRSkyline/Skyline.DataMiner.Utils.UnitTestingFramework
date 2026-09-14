@@ -81,6 +81,32 @@
             // Assert
             // TODO assert by accessing the IDmsElementMock and checking if the correct row was added to the table (without going via .Object).
         }
+
+        public void RestartAndEnablePolling_ArrangeWithBuilders()
+        {
+            // Arrange
+            // TODO arrange WITHOUT using builders: one dms with one dma with one element with "DemoProtocol" protocol.
+
+            // Act
+            var connectorApi = new ConnectorApi(new Mock<IDms>().Object, "DemoProtocol");
+            connectorApi.Repoll();
+
+            // Assert
+            // TODO assert by accessing the IDmsElementMock and checking State and param 100 (without going via .Object).
+        }
+
+        public void RestartAndEnablePolling_ArrangeWithoutBuilders()
+        {
+            // Arrange
+            // TODO arrange WITH using the builders: one dms with one dma with one element with "DemoProtocol" protocol.
+
+            // Act
+            var connectorApi = new ConnectorApi(new Mock<IDms>().Object, "DemoProtocol");
+            connectorApi.RestartAndEnablePolling();
+
+            // Assert
+            // TODO assert by accessing the IDmsElementMock and checking State and param 100 (without going via .Object).
+        }
     }
 
     internal static class ElementFinder
