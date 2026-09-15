@@ -240,7 +240,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             });
         }
 
-        internal IDmsProtocolMock AddProtocol(string pathToProtocolXml)
+        public IDmsProtocolMock AddProtocol(string pathToProtocolXml)
         {
             var protocolModel = ProtocolModelBuilder.Build(pathToProtocolXml);
             var protocolMock = new IDmsProtocolMock(protocolModel, pathToProtocolXml);
@@ -261,6 +261,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         public IDmsElementMock GetElementMock(string name)
         {
             return cache.GetElement(name);
+        }
+
+        public IDmsViewMock GetViewMock(int viewId)
+        {
+            return cache.GetView(viewId);
         }
 
         /// <summary>

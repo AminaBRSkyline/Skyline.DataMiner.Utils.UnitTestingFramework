@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Tests
+﻿namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Tests
 {
+    using System;
+    using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;

@@ -13,6 +13,8 @@
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Templates;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
     using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
 
     /// <summary>
     /// A pre-arranged mock of <see cref="IDmsElement"/>.
@@ -38,7 +40,7 @@
         private readonly Dictionary<string, Action<ElementNameChange>> nameMonitors = new Dictionary<string, Action<ElementNameChange>>();
         private readonly Dictionary<string, Action<ElementStateChange>> stateMonitors = new Dictionary<string, Action<ElementStateChange>>();
         private readonly ParametersAndTables parametersAndTables;
-        private readonly Dictionary<int, object> tableMocks = new Dictionary<int, object>();
+        private readonly Dictionary<int, DmsTableMock> tableMocks = new Dictionary<int, DmsTableMock>();
         private readonly Dictionary<string, Mock> standaloneParameterMocks = new Dictionary<string, Mock>();
         private readonly string protocolName;
         private readonly string protocolVersion;
@@ -185,12 +187,13 @@
         /// <typeparam name="T">The parameter value type.</typeparam>
         /// <param name="parameterId">The parameter ID.</param>
         /// <returns>The standalone parameter mock.</returns>
-        public Mock<IDmsStandaloneParameter<T>> GetStandaloneParameterMock<T>(int parameterId)
+        public DmsStandaloneParameterMock<T> GetStandaloneParameterMock<T>(int parameterId)
         {
             GetStandaloneParameterObject(typeof(T), parameterId);
 
             var cacheKey = $"{parameterId}|{typeof(T).AssemblyQualifiedName}";
-            return (Mock<IDmsStandaloneParameter<T>>)standaloneParameterMocks[cacheKey];
+
+            return (DmsStandaloneParameterMock<T>)standaloneParameterMocks[cacheKey];
         }
 
         /// <summary>
@@ -198,9 +201,9 @@
         /// </summary>
         /// <param name="tableId">The table ID.</param>
         /// <returns>The table.</returns>
-        public IDmsTable GetTable(int tableId)
+        public DmsTableMock GetDmsTableMock(int tableId)
         {
-            return GetTableObject(tableId);
+            return tableMocks[tableId];
         }
 
         /// <summary>

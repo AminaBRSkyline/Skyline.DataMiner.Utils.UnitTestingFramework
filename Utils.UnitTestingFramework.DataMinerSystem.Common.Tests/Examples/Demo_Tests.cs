@@ -22,22 +22,25 @@
             var firstDma = dmsMock.CreateAgent(1, "DMA 1");
             var secondDma = dmsMock.CreateAgent(2, "DMA 2");
             var thirdDma = dmsMock.CreateAgent(3, "DMA 3");
-            var path = "Examples/protocol.xml";
+            string protocolXmlPath = "Examples/protocol.xml";
 
-            var sourceMock = firstDma.CreateElement(path, id: 11, agentId: 1, name: "Source");
-            var sameDmaMock = firstDma.CreateElement(path, id: 12, agentId: 1, name: "Same DMA");
-            secondDma.CreateElement(path, id: 21, agentId: 2, name: "Second DMA");
-            thirdDma.CreateElement(path, id: 31, agentId: 3, name: "Third DMA A");
-            thirdDma.CreateElement(path, id: 32, agentId: 3, name: "Third DMA B");
-            thirdDma.CreateElement(path, id: 33, agentId: 3, name: "Third DMA C");
+            firstDma.CreateElement(protocolXmlPath, id: 11, name: "Element A");
+            firstDma.CreateElement(protocolXmlPath, id: 12, name: "Element B");
+
+            secondDma.CreateElement(protocolXmlPath, id: 21, name: "Element C");
+
+            thirdDma.CreateElement(protocolXmlPath, id: 31, name: "Element D");
+            thirdDma.CreateElement(protocolXmlPath, id: 32, name: "Element E");
+            thirdDma.CreateElement(protocolXmlPath, id: 33, name: "Element F");
 
             // Act
-            var similarElements = ElementFinder.FindSimilarOnSameDma(sourceMock.Object);
+            var element = dmsMock.GetElementMock("Element A");
+            var similarElements = ElementFinder.FindSimilarOnSameDma(element.Object);
 
             // Assert
             similarElements.Should().HaveCount(2);
-            similarElements.Should().Contain(element => element.Name == "Source");
-            similarElements.Should().Contain(element => element.Name == "Same DMA");
+            similarElements.Should().Contain(element.Object);
+            similarElements.Should().Contain(element => element.Name == "Element B");
         }
 
         [TestMethod]
@@ -46,26 +49,25 @@
             // Arrange
             var dmsMock = new DmsBuilder()
                 .WithProtocol("Examples/protocol.xml")
-                .WithDma(id: 1, configure: dma => dma
-                    .WithElement(id: 11, name: "Source", protocolName: "DemoProtocol")
-                    .WithElement(id: 12, name: "Same DMA", protocolName: "DemoProtocol"))
-                .WithDma(id: 2, configure: dma => dma
-                    .WithElement(id: 21, name: "Second DMA", protocolName: "DemoProtocol"))
-                .WithDma(id: 3, configure: dma => dma
-                    .WithElement(id: 31, name: "Third DMA A", protocolName: "DemoProtocol")
-                    .WithElement(id: 32, name: "Third DMA B", protocolName: "DemoProtocol")
-                    .WithElement(id: 33, name: "Third DMA C", protocolName: "DemoProtocol"))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol")
+                    .WithElement(id: 12, name: "Element B", protocolName: "DemoProtocol"))
+                .WithDma(id: 2, dma => dma
+                    .WithElement(id: 21, name: "Element C", protocolName: "DemoProtocol"))
+                .WithDma(id: 3, dma => dma
+                    .WithElement(id: 31, name: "Element D", protocolName: "DemoProtocol")
+                    .WithElement(id: 32, name: "Element E", protocolName: "DemoProtocol")
+                    .WithElement(id: 33, name: "Element F", protocolName: "DemoProtocol"))
                 .Build();
 
-            var source = dmsMock.Object.GetAgent(1).GetElement("Source");
-
             // Act
-            var similarElements = ElementFinder.FindSimilarOnSameDma(source);
+            var element = dmsMock.GetElementMock("Element A");
+            var similarElements = ElementFinder.FindSimilarOnSameDma(element.Object);
 
             // Assert
             similarElements.Should().HaveCount(2);
-            similarElements.Should().Contain(source);
-            similarElements.Should().Contain(element => element.Name == "Same DMA");
+            similarElements.Should().Contain(element.Object);
+            similarElements.Should().Contain(element => element.Name == "Element B");
         }
 
         [TestMethod]
@@ -74,26 +76,28 @@
             // Arrange
             var dmsMock = new DmsBuilder()
                 .WithProtocol("Examples/protocol.xml")
-                .WithView(10, "Other A")
-                .WithView(20, "Selected")
-                .WithView(30, "Other B")
-                .WithDma(id: 1, configure: dma => dma
-                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
+                .WithView(10, "View 1")
+                .WithView(20, "View 2")
+                .WithView(30, "View 3")
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol", configure: element => element
                         .UnderView(20)))
                 .Build();
 
-            var otherA = dmsMock.Object.GetView(10);
-            var selected = dmsMock.Object.GetView(20);
-            var otherB = dmsMock.Object.GetView(30);
+            var selectedView = dmsMock.GetViewMock(20);
 
             // Act
-            var otherViews = ElementFinder.FindOtherViews(selected);
+            var otherViews = ElementFinder.FindOtherViews(selectedView.Object);
 
             // Assert
+
+            var otherA = dmsMock.GetViewMock(10);
+            var otherB = dmsMock.GetViewMock(30);
+
             otherViews.Should().HaveCount(2);
-            otherViews.Should().Contain(otherA);
-            otherViews.Should().Contain(otherB);
-            otherViews.Should().NotContain(selected);
+            otherViews.Should().Contain(otherA.Object);
+            otherViews.Should().Contain(otherB.Object);
+            otherViews.Should().NotContain(selectedView.Object);
         }
 
         [TestMethod]
@@ -103,21 +107,21 @@
             var dmsMock = new IDmsMock();
             var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
 
-            var otherAMock = dmsMock.CreateView(10, "Other A");
-            var selectedMock = dmsMock.CreateView(20, "Selected");
-            var otherBMock = dmsMock.CreateView(30, "Other B");
+            var view1 = dmsMock.CreateView(10, "View 1");
+            var view2 = dmsMock.CreateView(20, "View 2");
+            var view3 = dmsMock.CreateView(30, "View 3");
 
-            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
+            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, name: "Element A");
             elementMock.AddView(20);
 
             // Act
-            var otherViews = ElementFinder.FindOtherViews(selectedMock.Object);
+            var otherViews = ElementFinder.FindOtherViews(view2.Object);
 
             // Assert
             otherViews.Should().HaveCount(2);
-            otherViews.Should().Contain(otherAMock.Object);
-            otherViews.Should().Contain(otherBMock.Object);
-            otherViews.Should().NotContain(selectedMock.Object);
+            otherViews.Should().Contain(view1.Object);
+            otherViews.Should().Contain(view3.Object);
+            otherViews.Should().NotContain(view2.Object);
         }
 
         [TestMethod]
@@ -126,32 +130,30 @@
             // Arrange
             var dmsMock = new DmsBuilder()
                 .WithProtocol("Examples/protocol.xml")
-                .WithDma(id: 1, configure: dma => dma
-                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
-                        .WithTable(100, new object[][]
-                        {
-                            new object[] { "old", "Old value" }
-                        })))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol", configure: element => element
+                        .WithTable(100,
+                        [
+                            ["old", "Old value"]
+                        ])))
                 .Build();
 
-            var elementMock = dmsMock.GetElementMock("Element");
-            var table = elementMock.GetTable(100);
-            var tableMock = Mock.Get(table);
-            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
-
             // Act
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
             connectorApi.Repoll();
 
             // Assert
             var expectedRows = new object[][]
             {
-                new object[] { "1", "Value1" },
-                new object[] { "2", "Value2" },
-                new object[] { "3", "Value3" }
+                ["1", "Value1"],
+                ["2", "Value2"],
+                ["3", "Value3"]
             };
 
-            tableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
-            table.GetRows().Should().BeEquivalentTo(expectedRows);
+            var dmsTableMock = dmsMock.GetElementMock("Element").GetDmsTableMock(100);
+
+            dmsTableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
+            dmsTableMock.AllRows.Should().BeEquivalentTo(expectedRows);
         }
 
         [TestMethod]
@@ -160,27 +162,24 @@
             // Arrange
             var dmsMock = new IDmsMock();
             var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
-            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
-            var table = elementMock.GetTable(100);
-            table.AddRow(new object[] { "old", "Old value" });
-
-            var tableMock = Mock.Get(table);
-            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
-            tableMock.Invocations.Clear();
+            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, name: "Element A");
+            var table = elementMock.GetDmsTableMock(100);
+            table.SetRow(["old", "Old value"]);
 
             // Act
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
             connectorApi.Repoll();
 
             // Assert
             var expectedRows = new object[][]
             {
-                new object[] { "1", "Value1" },
-                new object[] { "2", "Value2" },
-                new object[] { "3", "Value3" }
+                ["1", "Value1"],
+                ["2", "Value2"],
+                ["3", "Value3"]
             };
 
-            tableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
-            table.GetRows().Should().BeEquivalentTo(expectedRows);
+            table.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
+            table.AllRows.Should().BeEquivalentTo(expectedRows);
         }
 
         [TestMethod]
@@ -189,14 +188,12 @@
             // Arrange
             var dmsMock = new DmsBuilder()
                 .WithProtocol("Examples/protocol.xml")
-                .WithDma(id: 1, configure: dma => dma
-                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
-                        .WithParameter<int?>(10, 0)))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol", configure: element => element
+                        .WithParameter<int?>(parameterId: 10, value: 0)))
                 .Build();
 
-            var elementMock = dmsMock.GetElementMock("Element");
-            var parameterMock = elementMock.GetStandaloneParameterMock<int?>(10);
-            var parameter = parameterMock.Object;
+            var elementMock = dmsMock.GetElementMock("Element A");
 
             elementMock.Setup(e => e.IsStartupComplete()).Returns(() =>
             {
@@ -204,16 +201,17 @@
                 return true;
             });
 
-            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
-
             // Act
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
             connectorApi.RestartAndEnablePolling();
 
             // Assert
             elementMock.Verify(e => e.Restart(), Times.Once());
             elementMock.State.Should().Be(ElementState.Active);
+
+            var parameterMock = elementMock.GetStandaloneParameterMock<int?>(10);
             parameterMock.Verify(p => p.SetValue(1), Times.Once());
-            parameter.GetValue().Should().Be(1);
+            parameterMock.Value.Should().Be(1);
         }
 
         [TestMethod]
@@ -222,10 +220,9 @@
             // Arrange
             var dmsMock = new IDmsMock();
             var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
-            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
+            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, name: "Element A");
             var parameterMock = elementMock.GetStandaloneParameterMock<int?>(10);
-            var parameter = parameterMock.Object;
-            parameter.SetValue(0);
+            parameterMock.UpdateValue(10);
 
             elementMock.Setup(e => e.IsStartupComplete()).Returns(() =>
             {
@@ -233,16 +230,16 @@
                 return true;
             });
 
-            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
-
             // Act
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
             connectorApi.RestartAndEnablePolling();
 
             // Assert
             elementMock.Verify(e => e.Restart(), Times.Once());
             elementMock.State.Should().Be(ElementState.Active);
+
             parameterMock.Verify(p => p.SetValue(1), Times.Once());
-            parameter.GetValue().Should().Be(1);
+            parameterMock.Value.Should().Be(1);
         }
     }
 

@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
 
@@ -16,9 +17,8 @@
     /// Mock of an <see cref="IDmsTable"/> that is backed by an <see cref="ITableModel"/>,
     /// so that rows and cells that are set are stored and can be retrieved again.
     /// </summary>
-    internal class DmsTableMock : Mock<IDmsTable>
+    public class DmsTableMock : Mock<IDmsTable>
     {
-        private readonly ITableModel tableModel;
         private readonly IDmsElement element;
         private readonly Dictionary<string, object> columnMocks = new Dictionary<string, object>();
         private readonly Dictionary<string, EventHandler<RowChangedEventArgs>> valueMonitors =
@@ -32,31 +32,31 @@
         /// <exception cref="ArgumentNullException"><paramref name="tableModel"/> is <see langword="null"/>.</exception>
         public DmsTableMock(ITableModel tableModel, IDmsElement element)
         {
-            this.tableModel = tableModel ?? throw new ArgumentNullException(nameof(tableModel));
+            this.TableModel = tableModel ?? throw new ArgumentNullException(nameof(tableModel));
             this.element = element;
 
             Setup(t => t.Id).Returns(tableModel.TableId);
             Setup(t => t.Element).Returns(element);
 
-            Setup(t => t.RowExists(It.IsAny<string>())).Returns((string key) => this.tableModel.RowExists(key));
+            Setup(t => t.RowExists(It.IsAny<string>())).Returns((string key) => this.TableModel.RowExists(key));
 
-            Setup(t => t.GetPrimaryKeys()).Returns(() => this.tableModel.GetAllRows().Keys.ToArray());
+            Setup(t => t.GetPrimaryKeys()).Returns(() => this.TableModel.GetAllRows().Keys.ToArray());
 
-            Setup(t => t.GetRow(It.IsAny<string>())).Returns((string key) => this.tableModel.GetRow(key));
+            Setup(t => t.GetRow(It.IsAny<string>())).Returns((string key) => this.TableModel.GetRow(key));
 
-            Setup(t => t.GetRows()).Returns(() => this.tableModel.GetAllRows().Values.ToArray());
+            Setup(t => t.GetRows()).Returns(() => this.TableModel.GetAllRows().Values.ToArray());
 
             Setup(t => t.GetData(It.IsAny<int>())).Returns((int keyColumnIndex) => GetData(keyColumnIndex));
 
             Setup(t => t.QueryData(It.IsAny<IEnumerable<IColumnFilter>>())).Returns((IEnumerable<IColumnFilter> filters) => QueryData(filters));
 
-            Setup(t => t.AddRow(It.IsAny<object[]>())).Callback((object[] data) => this.tableModel.SetRow(data));
+            Setup(t => t.AddRow(It.IsAny<object[]>())).Callback((object[] data) => this.TableModel.SetRow(data));
 
             Setup(t => t.SetRow(It.IsAny<string>(), It.IsAny<object[]>())).Callback((string key, object[] data) => SetRow(key, data));
 
-            Setup(t => t.DeleteRow(It.IsAny<string>())).Callback((string key) => this.tableModel.RemoveRows(key));
+            Setup(t => t.DeleteRow(It.IsAny<string>())).Callback((string key) => this.TableModel.RemoveRows(key));
 
-            Setup(t => t.DeleteRows(It.IsAny<IEnumerable<string>>())).Callback((IEnumerable<string> keys) => this.tableModel.RemoveRows(keys.ToArray()));
+            Setup(t => t.DeleteRows(It.IsAny<IEnumerable<string>>())).Callback((IEnumerable<string> keys) => this.TableModel.RemoveRows(keys.ToArray()));
 
             Setup(t => t.GetColumn<It.IsAnyType>(It.IsAny<int>()))
                 .Returns(new InvocationFunc(invocation =>
@@ -73,7 +73,19 @@
         /// <summary>
         /// Gets the <see cref="ITableModel"/> that backs this table and holds its data.
         /// </summary>
-        internal ITableModel TableModel => tableModel;
+        internal ITableModel TableModel { get; }
+
+        public ReadOnlyDictionary<string, object[]> AllRows => TableModel.GetAllRows();
+
+        public void SetRow(object[] row, DateTime? timestamp = null)
+        {
+            if (row == null)
+            {
+                throw new ArgumentNullException(nameof(row));
+            }
+
+            TableModel.SetRow(row, timestamp);
+        }
 
         private void SetupValueMonitors()
         {
@@ -122,7 +134,7 @@
                 }
                 else
                 {
-                    var row = tableModel.GetRow(e.PrimaryKey);
+                    var row = TableModel.GetRow(e.PrimaryKey);
                     updatedRows = new Dictionary<string, object[]>();
                     if (row != null)
                     {
@@ -132,20 +144,20 @@
                     deletedRows = new string[0];
                 }
 
-                var param = new Param(element?.AgentId ?? 0, element?.Id ?? 0, tableModel.TableId);
+                var param = new Param(element?.AgentId ?? 0, element?.Id ?? 0, TableModel.TableId);
 
                 action(new TableValueChange(param, sourceId, null, primaryKeyColumnIdx, updatedRows, deletedRows));
             }
 
             valueMonitors[sourceId] = Handler;
-            tableModel.RowChanged += Handler;
+            TableModel.RowChanged += Handler;
         }
 
         private void StopValueMonitor(string sourceId)
         {
             if (sourceId != null && valueMonitors.TryGetValue(sourceId, out var handler))
             {
-                tableModel.RowChanged -= handler;
+                TableModel.RowChanged -= handler;
                 valueMonitors.Remove(sourceId);
             }
         }
@@ -157,7 +169,7 @@
             var predicates = filterList.OfType<ColumnFilter>().ToList();
             var returnColumnPids = filterList.OfType<ColumnReturnFilter>().Select(f => f.Pid).ToList();
 
-            var rows = tableModel.GetAllRows().Values.Where(row => predicates.All(predicate => Matches(row, predicate)));
+            var rows = TableModel.GetAllRows().Values.Where(row => predicates.All(predicate => Matches(row, predicate)));
 
             if (returnColumnPids.Count == 0)
             {
@@ -169,7 +181,7 @@
 
         private bool Matches(object[] row, ColumnFilter filter)
         {
-            var columnDefinition = tableModel.Schema.FindColumnDefinitionByPid(filter.Pid);
+            var columnDefinition = TableModel.Schema.FindColumnDefinitionByPid(filter.Pid);
             if (columnDefinition == null)
             {
                 return false;
@@ -180,7 +192,7 @@
 
         private object GetCell(object[] row, int columnPid)
         {
-            var columnDefinition = tableModel.Schema.FindColumnDefinitionByPid(columnPid);
+            var columnDefinition = TableModel.Schema.FindColumnDefinitionByPid(columnPid);
             return columnDefinition == null ? null : row[columnDefinition.Idx];
         }
 
@@ -234,13 +246,13 @@
             // so the correct row is updated regardless of the key embedded in the provided data.
             var row = (object[])data.Clone();
 
-            var primaryKeyColumnIndex = tableModel.Schema.PrimaryKeyColumn.Idx;
+            var primaryKeyColumnIndex = TableModel.Schema.PrimaryKeyColumn.Idx;
             if (primaryKeyColumnIndex < row.Length)
             {
                 row[primaryKeyColumnIndex] = primaryKey;
             }
 
-            tableModel.SetRow(row);
+            TableModel.SetRow(row);
         }
 
         private object GetColumnObject(Type columnType, int columnPid)
@@ -263,14 +275,14 @@
 
         private IDictionary<string, object[]> GetData(int keyColumnIndex)
         {
-            if (keyColumnIndex < 0 || keyColumnIndex >= tableModel.Schema.ColumnCount)
+            if (keyColumnIndex < 0 || keyColumnIndex >= TableModel.Schema.ColumnCount)
             {
                 throw new ArgumentException($"'{keyColumnIndex}' is not a valid key column index.", nameof(keyColumnIndex));
             }
 
             var data = new Dictionary<string, object[]>();
 
-            foreach (var row in tableModel.GetAllRows().Values)
+            foreach (var row in TableModel.GetAllRows().Values)
             {
                 var key = System.Convert.ToString(row[keyColumnIndex]);
                 data[key] = row;

@@ -1,19 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
+﻿namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
 {
-    using System.Collections.Generic;
     using System;
-
-    using Moq;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common;
-    using Skyline.DataMiner.Core.DataMinerSystem.Common;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Text.RegularExpressions;
+    using Moq;
     using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
+    using Skyline.DataMiner.Core.DataMinerSystem.Common;
 
     /// <summary>
     /// A pre-arranged mock of <see cref="IDma"/>.
@@ -169,12 +162,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         /// </summary>
         /// <param name="pathToProtocolXml">The path to the protocol.xml file.</param>
         /// <param name="id">The element ID.</param>
-        /// <param name="agentId">The DataMiner Agent ID.</param>
         /// <param name="name">The element name.</param>
         /// <returns>The created element mock.</returns>
-        public IDmsElementMock CreateElement(string pathToProtocolXml, int id = 0, int agentId = 0, string name = "Element")
+        public IDmsElementMock CreateElement(string pathToProtocolXml, int id = 0, string name = "Element")
         {
-            return CreateElement(pathToProtocolXml, id, agentId, name, null);
+            return CreateElement(pathToProtocolXml, id, name, null);
         }
 
         internal IDmsElementMock CreateElement(IDmsProtocolMock protocolMock, int id, string name)
@@ -184,12 +176,12 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 throw new ArgumentNullException(nameof(protocolMock));
             }
 
-            return CreateElement(protocolMock.PathToProtocolXml, id, Object.Id, name, protocolMock.ProtocolModel);
+            return CreateElement(protocolMock.PathToProtocolXml, id, name, protocolMock.ProtocolModel);
         }
 
-        private IDmsElementMock CreateElement(string pathToProtocolXml, int id, int agentId, string name, IProtocolModel protocolModel)
+        private IDmsElementMock CreateElement(string pathToProtocolXml, int id, string name, IProtocolModel protocolModel)
         {
-            var elementMock = new IDmsElementMock(cache, pathToProtocolXml, id, agentId, name, protocolModel);
+            var elementMock = new IDmsElementMock(cache, pathToProtocolXml, id, Object.Id, name, protocolModel);
 
             cache.AddElement(elementMock);
 

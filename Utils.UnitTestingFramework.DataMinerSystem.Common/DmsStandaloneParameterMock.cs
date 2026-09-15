@@ -15,9 +15,8 @@
     /// so that values that are set are stored and can be retrieved again.
     /// </summary>
     /// <typeparam name="T">The type of the parameter value.</typeparam>
-    internal class DmsStandaloneParameterMock<T> : Mock<IDmsStandaloneParameter<T>>
+    public class DmsStandaloneParameterMock<T> : Mock<IDmsStandaloneParameter<T>>
     {
-        private readonly IParameterModel parameterModel;
         private readonly IDmsElement element;
         private readonly Dictionary<string, EventHandler<ParameterModelChangedEventArgs>> valueMonitors =
             new Dictionary<string, EventHandler<ParameterModelChangedEventArgs>>();
@@ -30,21 +29,30 @@
         /// <exception cref="ArgumentNullException"><paramref name="parameterModel"/> is <see langword="null"/>.</exception>
         public DmsStandaloneParameterMock(IParameterModel parameterModel, IDmsElement element)
         {
-            this.parameterModel = parameterModel ?? throw new ArgumentNullException(nameof(parameterModel));
+            this.ParameterModel = parameterModel ?? throw new ArgumentNullException(nameof(parameterModel));
             this.element = element;
 
             Setup(p => p.Id).Returns(parameterModel.Definition.Pid);
             Setup(p => p.Element).Returns(element);
 
-            Setup(p => p.GetValue()).Returns(() => ValueConverter.Convert<T>(this.parameterModel.Value));
+            Setup(p => p.GetValue()).Returns(() => ValueConverter.Convert<T>(this.ParameterModel.Value));
 
             Setup(p => p.SetValue(It.IsAny<T>()))
-                .Callback((T value) => this.parameterModel.Update(value));
+                .Callback((T value) => this.ParameterModel.Update(value));
 
             Setup(p => p.SetValue(It.IsAny<T>(), It.IsAny<TimeSpan>(), It.IsAny<Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Waiters.ExpectedChanges>()))
-                .Callback((T value, TimeSpan _, Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Waiters.ExpectedChanges __) => this.parameterModel.Update(value));
+                .Callback((T value, TimeSpan _, Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Waiters.ExpectedChanges __) => this.ParameterModel.Update(value));
 
             SetupValueMonitors();
+        }
+
+        internal IParameterModel ParameterModel { get; }
+
+        public object Value => this.ParameterModel.Value;
+
+        public void UpdateValue(object value, DateTime? timestamp = null)
+        {
+            this.ParameterModel.Update(value, timestamp);
         }
 
         private void SetupValueMonitors()
@@ -80,20 +88,20 @@
             void Handler(object sender, ParameterModelChangedEventArgs e)
             {
                 var value = ValueConverter.Convert<T>(e.NewValue);
-                var param = new Param(element?.AgentId ?? 0, element?.Id ?? 0, parameterModel.Definition.Pid);
+                var param = new Param(element?.AgentId ?? 0, element?.Id ?? 0, ParameterModel.Definition.Pid);
 
                 action(new ParamValueChange<T>(param, value, sourceId, null));
             }
 
             valueMonitors[sourceId] = Handler;
-            parameterModel.Changed += Handler;
+            ParameterModel.Changed += Handler;
         }
 
         private void StopValueMonitor(string sourceId)
         {
             if (sourceId != null && valueMonitors.TryGetValue(sourceId, out var handler))
             {
-                parameterModel.Changed -= handler;
+                ParameterModel.Changed -= handler;
                 valueMonitors.Remove(sourceId);
             }
         }
