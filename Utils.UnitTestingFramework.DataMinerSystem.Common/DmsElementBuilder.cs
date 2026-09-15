@@ -38,10 +38,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 }
 
                 var table = elementMock.Object.GetTable(tableId);
+                var tableMock = (DmsTableMock)Moq.Mock.Get(table);
 
                 foreach (var row in rows)
                 {
-                    table.AddRow(row);
+                    tableMock.TableModel.SetRow(row);
                 }
             });
 

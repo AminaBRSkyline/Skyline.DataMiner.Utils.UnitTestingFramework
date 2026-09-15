@@ -254,6 +254,16 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         }
 
         /// <summary>
+        /// Gets an element mock from this DataMiner System by name.
+        /// </summary>
+        /// <param name="name">The element name.</param>
+        /// <returns>The element mock, or <see langword="null"/> if it does not exist.</returns>
+        public IDmsElementMock GetElementMock(string name)
+        {
+            return cache.GetElement(name);
+        }
+
+        /// <summary>
         /// Creates a DataMiner Agent mock that belongs to this DataMiner System.
         /// </summary>
         /// <param name="agentId">The DataMiner Agent ID.</param>

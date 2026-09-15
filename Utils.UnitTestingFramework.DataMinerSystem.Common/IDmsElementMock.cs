@@ -39,7 +39,7 @@
         private readonly Dictionary<string, Action<ElementStateChange>> stateMonitors = new Dictionary<string, Action<ElementStateChange>>();
         private readonly ParametersAndTables parametersAndTables;
         private readonly Dictionary<int, object> tableMocks = new Dictionary<int, object>();
-        private readonly Dictionary<string, object> standaloneParameterMocks = new Dictionary<string, object>();
+        private readonly Dictionary<string, Mock> standaloneParameterMocks = new Dictionary<string, Mock>();
         private readonly string protocolName;
         private readonly string protocolVersion;
         /// Gets or sets the number of active alarms returned by the mock.
@@ -178,6 +178,30 @@
         /// Gets or sets the spectrum analyzer component returned by the mock.
         /// </summary>
         public IDmsSpectrumAnalyzer SpectrumAnalyzer { get; set; }
+
+        /// <summary>
+        /// Gets a standalone parameter mock belonging to this element.
+        /// </summary>
+        /// <typeparam name="T">The parameter value type.</typeparam>
+        /// <param name="parameterId">The parameter ID.</param>
+        /// <returns>The standalone parameter mock.</returns>
+        public Mock<IDmsStandaloneParameter<T>> GetStandaloneParameterMock<T>(int parameterId)
+        {
+            GetStandaloneParameterObject(typeof(T), parameterId);
+
+            var cacheKey = $"{parameterId}|{typeof(T).AssemblyQualifiedName}";
+            return (Mock<IDmsStandaloneParameter<T>>)standaloneParameterMocks[cacheKey];
+        }
+
+        /// <summary>
+        /// Gets a table belonging to this element mock.
+        /// </summary>
+        /// <param name="tableId">The table ID.</param>
+        /// <returns>The table.</returns>
+        public IDmsTable GetTable(int tableId)
+        {
+            return GetTableObject(tableId);
+        }
 
         /// <summary>
         /// Adds this element to the specified view.
@@ -509,18 +533,16 @@
 
             var cacheKey = $"{parameterId}|{parameterType.AssemblyQualifiedName}";
 
-            if (!standaloneParameterMocks.TryGetValue(cacheKey, out var parameterMockObject))
+            if (!standaloneParameterMocks.TryGetValue(cacheKey, out var parameterMock))
             {
                 var parameterModel = parametersAndTables.GetParameter(parameterId);
-
                 var parameterMockType = typeof(DmsStandaloneParameterMock<>).MakeGenericType(parameterType);
-                var parameterMock = (Mock)Activator.CreateInstance(parameterMockType, parameterModel, Object);
 
-                parameterMockObject = parameterMock.Object;
-                standaloneParameterMocks.Add(cacheKey, parameterMockObject);
+                parameterMock = (Mock)Activator.CreateInstance(parameterMockType, parameterModel, Object);
+                standaloneParameterMocks.Add(cacheKey, parameterMock);
             }
 
-            return parameterMockObject;
+            return parameterMock.Object;
         }
 
         private IDmsTable GetTableObject(int tableId)

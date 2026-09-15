@@ -78,8 +78,8 @@
                 .WithView(20, "Selected")
                 .WithView(30, "Other B")
                 .WithDma(id: 1, configure: dma => dma
-                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element =>
-                        element.UnderView(20)))
+                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
+                        .UnderView(20)))
                 .Build();
 
             var otherA = dmsMock.Object.GetView(10);
@@ -125,16 +125,19 @@
         {
             // Arrange
             var dmsMock = new DmsBuilder()
-
                 .WithProtocol("Examples/protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element.WithTable(100, new object[][] { new object[] { "old", "Old value" } })))
+                .WithDma(id: 1, configure: dma => dma
+                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
+                        .WithTable(100, new object[][]
+                        {
+                            new object[] { "old", "Old value" }
+                        })))
                 .Build();
 
-            var elementMock = dmsMock.Object.GetElement("Element");
+            var elementMock = dmsMock.GetElementMock("Element");
             var table = elementMock.GetTable(100);
             var tableMock = Mock.Get(table);
             var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
-            tableMock.Invocations.Clear();
 
             // Act
             connectorApi.Repoll();
@@ -158,7 +161,7 @@
             var dmsMock = new IDmsMock();
             var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
             var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
-            var table = elementMock.Object.GetTable(100);
+            var table = elementMock.GetTable(100);
             table.AddRow(new object[] { "old", "Old value" });
 
             var tableMock = Mock.Get(table);
@@ -170,11 +173,11 @@
 
             // Assert
             var expectedRows = new object[][]
-           {
+            {
                 new object[] { "1", "Value1" },
                 new object[] { "2", "Value2" },
                 new object[] { "3", "Value3" }
-           };
+            };
 
             tableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
             table.GetRows().Should().BeEquivalentTo(expectedRows);
@@ -188,12 +191,12 @@
                 .WithProtocol("Examples/protocol.xml")
                 .WithDma(id: 1, configure: dma => dma
                     .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
-                            .WithParameter<int?>(10, 0)))
+                        .WithParameter<int?>(10, 0)))
                 .Build();
 
-            var elementMock = (IDmsElementMock)Mock.Get(dmsMock.Object.GetElement("Element"));
-            var parameter = elementMock.Object.GetStandaloneParameter<int?>(10);
-            var parameterMock = Mock.Get(parameter);
+            var elementMock = dmsMock.GetElementMock("Element");
+            var parameterMock = elementMock.GetStandaloneParameterMock<int?>(10);
+            var parameter = parameterMock.Object;
 
             elementMock.Setup(e => e.IsStartupComplete()).Returns(() =>
             {
@@ -220,9 +223,9 @@
             var dmsMock = new IDmsMock();
             var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
             var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
-            var parameter = elementMock.Object.GetStandaloneParameter<int?>(10);
+            var parameterMock = elementMock.GetStandaloneParameterMock<int?>(10);
+            var parameter = parameterMock.Object;
             parameter.SetValue(0);
-            var parameterMock = Mock.Get(parameter);
 
             elementMock.Setup(e => e.IsStartupComplete()).Returns(() =>
             {
