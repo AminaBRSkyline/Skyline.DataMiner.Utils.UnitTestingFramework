@@ -5,7 +5,7 @@
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
 
-    internal class TableModelCreator : DataModelCreatorBase, IDataModelCreator
+    public class TableModelCreator : DataModelCreatorBase, IDataModelCreator
     {
         private readonly HashSet<int> excludedPids;
 

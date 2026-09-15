@@ -2,7 +2,7 @@
 {
     using System;
 
-    internal class ParameterValueChangedEventArgs<TParameterDefinition> : EventArgs where TParameterDefinition : ParameterDefinition
+    public class ParameterValueChangedEventArgs<TParameterDefinition> : EventArgs where TParameterDefinition : ParameterDefinition
     {
         public ParameterValueChangedEventArgs(TParameterDefinition parameterDefinition, object oldValue, object newValue, DateTime oldTimestamp, DateTime newTimestamp)
         {

@@ -2,110 +2,247 @@
 {
     using System;
     using System.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common;
+    using System.Collections.Generic;
+    using System.Threading;
+    using FluentAssertions;
 
     [TestClass]
-    internal class Demo_Tests
+    [DeploymentItem("Examples/protocol.xml", "Examples")]
+    public class Demo_Tests
     {
-        public void FindSimilarOnSameDma_ArrangeWithBuilders()
+        [TestMethod]
+        public void FindSimilarOnSameDma_ReturnsMatchingElementsFromSameDma_WithoutBuilders()
         {
             // Arrange
-            // TODO arrange WITHOUT using builders: one dms with 3 dmas, each with with different amount of elements with "DemoProtocol" protocol.
+            var dmsMock = new IDmsMock();
+            var firstDma = dmsMock.CreateAgent(1, "DMA 1");
+            var secondDma = dmsMock.CreateAgent(2, "DMA 2");
+            var thirdDma = dmsMock.CreateAgent(3, "DMA 3");
+            var path = "Examples/protocol.xml";
+
+            var sourceMock = firstDma.CreateElement(path, id: 11, agentId: 1, name: "Source");
+            var sameDmaMock = firstDma.CreateElement(path, id: 12, agentId: 1, name: "Same DMA");
+            secondDma.CreateElement(path, id: 21, agentId: 2, name: "Second DMA");
+            thirdDma.CreateElement(path, id: 31, agentId: 3, name: "Third DMA A");
+            thirdDma.CreateElement(path, id: 32, agentId: 3, name: "Third DMA B");
+            thirdDma.CreateElement(path, id: 33, agentId: 3, name: "Third DMA C");
 
             // Act
-            var similarElements = ElementFinder.FindSimilarOnSameDma(new Mock<IDmsElement>().Object);
+            var similarElements = ElementFinder.FindSimilarOnSameDma(sourceMock.Object);
 
             // Assert
-            // TODO assert
+            similarElements.Should().HaveCount(2);
+            similarElements.Should().Contain(element => element.Name == "Source");
+            similarElements.Should().Contain(element => element.Name == "Same DMA");
         }
 
-        public void FindSimilarOnSameDma_ArrangeWithoutBuilders()
+        [TestMethod]
+        public void FindSimilarOnSameDma_ReturnsMatchingElementsFromSameDma_WithBuilders()
         {
             // Arrange
-            // TODO arrange WITH using builders: one dms with 3 dmas, each with different amount of elements with "DemoProtocol" protocol.
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("Examples/protocol.xml")
+                .WithDma(id: 1, configure: dma => dma
+                    .WithElement(id: 11, name: "Source", protocolName: "DemoProtocol")
+                    .WithElement(id: 12, name: "Same DMA", protocolName: "DemoProtocol"))
+                .WithDma(id: 2, configure: dma => dma
+                    .WithElement(id: 21, name: "Second DMA", protocolName: "DemoProtocol"))
+                .WithDma(id: 3, configure: dma => dma
+                    .WithElement(id: 31, name: "Third DMA A", protocolName: "DemoProtocol")
+                    .WithElement(id: 32, name: "Third DMA B", protocolName: "DemoProtocol")
+                    .WithElement(id: 33, name: "Third DMA C", protocolName: "DemoProtocol"))
+                .Build();
+
+            var source = dmsMock.Object.GetAgent(1).GetElement("Source");
 
             // Act
-            var similarElements = ElementFinder.FindSimilarOnSameDma(new Mock<IDmsElement>().Object);
+            var similarElements = ElementFinder.FindSimilarOnSameDma(source);
 
             // Assert
-            // TODO assert
+            similarElements.Should().HaveCount(2);
+            similarElements.Should().Contain(source);
+            similarElements.Should().Contain(element => element.Name == "Same DMA");
         }
 
-        public void FindOtherViews_ArrangeWithBuilders()
+        [TestMethod]
+        public void FindOtherViewsOnSameDms_ReturnsAllViewsExceptSelectedView_WithBuilders()
         {
             // Arrange
-            // TODO arrange WITHOUT using builders: one dms with one dma with multiple (nested) views, one view should have one element.
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("Examples/protocol.xml")
+                .WithView(10, "Other A")
+                .WithView(20, "Selected")
+                .WithView(30, "Other B")
+                .WithDma(id: 1, configure: dma => dma
+                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
+                        .UnderView(20)))
+                .Build();
+
+            var otherA = dmsMock.Object.GetView(10);
+            var selected = dmsMock.Object.GetView(20);
+            var otherB = dmsMock.Object.GetView(30);
 
             // Act
-            var otherViews = ElementFinder.FindOtherViews(new Mock<IDmsView>().Object);
+            var otherViews = ElementFinder.FindOtherViews(selected);
 
             // Assert
-            // TODO assert
+            otherViews.Should().HaveCount(2);
+            otherViews.Should().Contain(otherA);
+            otherViews.Should().Contain(otherB);
+            otherViews.Should().NotContain(selected);
         }
 
-        public void FindOtherViews_ArrangeWithoutBuilders()
+        [TestMethod]
+        public void FindOtherViewsOnSameDms_ReturnsAllViewsExceptSelectedView_WithoutBuilders()
         {
             // Arrange
-            // TODO arrange WITH using builders: one dms with one dma with multiple (nested) views, one view should have one element.
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+
+            var otherAMock = dmsMock.CreateView(10, "Other A");
+            var selectedMock = dmsMock.CreateView(20, "Selected");
+            var otherBMock = dmsMock.CreateView(30, "Other B");
+
+            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
+            elementMock.AddView(20);
 
             // Act
-            var otherViews = ElementFinder.FindOtherViews(new Mock<IDmsView>().Object);
+            var otherViews = ElementFinder.FindOtherViews(selectedMock.Object);
 
             // Assert
-            // TODO assert
+            otherViews.Should().HaveCount(2);
+            otherViews.Should().Contain(otherAMock.Object);
+            otherViews.Should().Contain(otherBMock.Object);
+            otherViews.Should().NotContain(selectedMock.Object);
         }
 
-        public void Repoll_ArrangeWithBuilders()
+        [TestMethod]
+        public void Repoll_ReplacesExistingRowsWithPolledRows_WithBuilders()
         {
             // Arrange
-            // TODO arrange WITHOUT using builders: one dms with one dma with one element with "DemoProtocol" protocol, fill table 1 with some random rows.
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("Examples/protocol.xml")
+                .WithDma(id: 1, configure: dma => dma
+                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
+                        .WithTable(100, new object[][]
+                        {
+                            new object[] { "old", "Old value" }
+                        })))
+                .Build();
+
+            var elementMock = dmsMock.GetElementMock("Element");
+            var table = elementMock.GetTable(100);
+            var tableMock = Mock.Get(table);
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
 
             // Act
-            var connectorApi = new ConnectorApi(new Mock<IDms>().Object, "DemoProtocol");
             connectorApi.Repoll();
 
             // Assert
-            // TODO assert by accessing the IDmsElementMock and checking if the correct row was added to the table (without going via .Object).
+            var expectedRows = new object[][]
+            {
+                new object[] { "1", "Value1" },
+                new object[] { "2", "Value2" },
+                new object[] { "3", "Value3" }
+            };
+
+            tableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
+            table.GetRows().Should().BeEquivalentTo(expectedRows);
         }
 
-        public void Repoll_ArrangeWithoutBuilders()
+        [TestMethod]
+        public void Repoll_ReplacesExistingRowsWithPolledRows_WithoutBuilders()
         {
             // Arrange
-            // TODO arrange WITH using the builders: one dms with one dma with one element with "DemoProtocol" protocol, fill table 1 with some random rows.
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
+            var table = elementMock.GetTable(100);
+            table.AddRow(new object[] { "old", "Old value" });
+
+            var tableMock = Mock.Get(table);
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
+            tableMock.Invocations.Clear();
 
             // Act
-            var connectorApi = new ConnectorApi(new Mock<IDms>().Object, "DemoProtocol");
             connectorApi.Repoll();
 
             // Assert
-            // TODO assert by accessing the IDmsElementMock and checking if the correct row was added to the table (without going via .Object).
+            var expectedRows = new object[][]
+            {
+                new object[] { "1", "Value1" },
+                new object[] { "2", "Value2" },
+                new object[] { "3", "Value3" }
+            };
+
+            tableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
+            table.GetRows().Should().BeEquivalentTo(expectedRows);
         }
 
-        public void RestartAndEnablePolling_ArrangeWithBuilders()
+        [TestMethod]
+        public void RestartAndEnablePolling_WhenStartupCompletes_SetsPollingStatusToEnabled_WithBuilders()
         {
             // Arrange
-            // TODO arrange WITHOUT using builders: one dms with one dma with one element with "DemoProtocol" protocol.
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("Examples/protocol.xml")
+                .WithDma(id: 1, configure: dma => dma
+                    .WithElement(id: 11, name: "Element", protocolName: "DemoProtocol", configure: element => element
+                        .WithParameter<int?>(10, 0)))
+                .Build();
+
+            var elementMock = dmsMock.GetElementMock("Element");
+            var parameterMock = elementMock.GetStandaloneParameterMock<int?>(10);
+            var parameter = parameterMock.Object;
+
+            elementMock.Setup(e => e.IsStartupComplete()).Returns(() =>
+            {
+                elementMock.State = ElementState.Active;
+                return true;
+            });
+
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
 
             // Act
-            var connectorApi = new ConnectorApi(new Mock<IDms>().Object, "DemoProtocol");
-            connectorApi.Repoll();
-
-            // Assert
-            // TODO assert by accessing the IDmsElementMock and checking State and param 100 (without going via .Object).
-        }
-
-        public void RestartAndEnablePolling_ArrangeWithoutBuilders()
-        {
-            // Arrange
-            // TODO arrange WITH using the builders: one dms with one dma with one element with "DemoProtocol" protocol.
-
-            // Act
-            var connectorApi = new ConnectorApi(new Mock<IDms>().Object, "DemoProtocol");
             connectorApi.RestartAndEnablePolling();
 
             // Assert
-            // TODO assert by accessing the IDmsElementMock and checking State and param 100 (without going via .Object).
+            elementMock.Verify(e => e.Restart(), Times.Once());
+            elementMock.State.Should().Be(ElementState.Active);
+            parameterMock.Verify(p => p.SetValue(1), Times.Once());
+            parameter.GetValue().Should().Be(1);
+        }
+
+        [TestMethod]
+        public void RestartAndEnablePolling_WhenStartupCompletes_SetsPollingStatusToEnabled_WithoutBuilders()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+            var elementMock = dmaMock.CreateElement("Examples/protocol.xml", id: 11, agentId: 1, name: "Element");
+            var parameterMock = elementMock.GetStandaloneParameterMock<int?>(10);
+            var parameter = parameterMock.Object;
+            parameter.SetValue(0);
+
+            elementMock.Setup(e => e.IsStartupComplete()).Returns(() =>
+            {
+                elementMock.State = ElementState.Active;
+                return true;
+            });
+
+            var connectorApi = new ConnectorApi(dmsMock.Object, "DemoProtocol");
+
+            // Act
+            connectorApi.RestartAndEnablePolling();
+
+            // Assert
+            elementMock.Verify(e => e.Restart(), Times.Once());
+            elementMock.State.Should().Be(ElementState.Active);
+            parameterMock.Verify(p => p.SetValue(1), Times.Once());
+            parameter.GetValue().Should().Be(1);
         }
     }
 
@@ -153,20 +290,20 @@
 
         internal ConnectorApi(IDms dms, string protocolName)
         {
-            element = dms.GetElements().FirstOrDefault(el  => el.Protocol.Name == protocolName) ?? throw new InvalidOperationException($"Element with protocol name '{protocolName}' not found.");
+            element = dms.GetElements().FirstOrDefault(el => el.Protocol.Name == protocolName) ?? throw new InvalidOperationException($"Element with protocol name '{protocolName}' not found.");
         }
 
         public void Repoll()
         {
-            var table = element.GetTable(1);
+            var table = element.GetTable(100);
 
             table.DeleteRows(table.GetPrimaryKeys());
 
             var polledRows = new object[][]
             {
-                new object[] { 1, "Value1" },
-                new object[] { 2, "Value2" },
-                new object[] { 3, "Value3" }
+                new object[] { "1", "Value1" },
+                new object[] { "2", "Value2" },
+                new object[] { "3", "Value3" }
             };
 
             foreach (var row in polledRows)
@@ -185,7 +322,7 @@
             element.Restart();
 
             int retries = 0;
-            while(!element.IsStartupComplete() && retries < 3)
+            while (!element.IsStartupComplete() && retries < 3)
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 retries++;

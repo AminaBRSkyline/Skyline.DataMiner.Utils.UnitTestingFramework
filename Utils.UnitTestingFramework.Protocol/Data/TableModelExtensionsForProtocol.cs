@@ -4,11 +4,10 @@
     using System.Collections.Generic;
     using System.Linq;
     using Skyline.DataMiner.Scripting;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Protocol.Constants;
 
-    internal static class TableModelExtensionsForProtocol
+    public static class TableModelExtensionsForProtocol
     {
         /// <summary>
         /// Adds or upatesd the specified row and returns the 1-based row index.

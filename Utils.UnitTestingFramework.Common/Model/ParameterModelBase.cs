@@ -2,7 +2,7 @@
 {
     using System;
 
-    internal class ParameterModelBase<TDefinition> where TDefinition : ParameterDefinition
+    public class ParameterModelBase<TDefinition> where TDefinition : ParameterDefinition
     {
         private readonly object syncRoot = new object();
         private object value;

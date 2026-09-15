@@ -5,7 +5,7 @@
     /// <summary>
     /// Standalone parameter model.
     /// </summary>
-    internal interface IParameterModel
+    public interface IParameterModel
     {
         /// <summary>
         /// Occurs when the parameter value or timestamp changes.

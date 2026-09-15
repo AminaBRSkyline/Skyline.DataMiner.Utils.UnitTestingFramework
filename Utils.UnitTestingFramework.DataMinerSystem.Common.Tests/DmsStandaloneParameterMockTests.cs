@@ -16,7 +16,7 @@
         public void Id_ReturnsParameterId()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
 
             // Act
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
@@ -29,7 +29,7 @@
         public void Element_ReturnsOwningElement()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
 
             // Act
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
@@ -42,7 +42,7 @@
         public void GetValue_DefaultValue_ReturnsProtocolDefault()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
 
             // Act
             var value = mock.Object.GetStandaloneParameter<double?>(1000).GetValue();
@@ -55,7 +55,7 @@
         public void SetValue_ThenGetValue_ReturnsSetStringValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             // Act
@@ -69,7 +69,7 @@
         public void SetValue_ThenGetValue_ReturnsSetDoubleValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<double?>(1000);
 
             // Act
@@ -83,7 +83,7 @@
         public void SetValue_ThenGetValue_ReturnsSetNullableIntValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<int?>(800);
 
             // Act
@@ -97,7 +97,7 @@
         public void SetValue_WithExpectedChangesOverload_PersistsValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             // Act
@@ -111,7 +111,7 @@
         public void SetValue_ValueSetOnDifferentInstance_IsPersisted()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
 
             // Act
             mock.Object.GetStandaloneParameter<string>(1001).SetValue("persisted");
@@ -124,7 +124,7 @@
         public void StartValueMonitor_InvokesCallbackOnChange()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             ParamValueChange<string> received = null;
@@ -143,7 +143,7 @@
         public void StartValueMonitor_WithTimeSpanOverload_InvokesCallbackOnChange()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             ParamValueChange<string> received = null;
@@ -161,7 +161,7 @@
         public void StopValueMonitor_DoesNotInvokeCallbackAfterStop()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             ParamValueChange<string> received = null;
@@ -179,7 +179,7 @@
         public void StopValueMonitor_WithTimeSpanOverload_DoesNotInvokeCallbackAfterStop()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             ParamValueChange<string> received = null;

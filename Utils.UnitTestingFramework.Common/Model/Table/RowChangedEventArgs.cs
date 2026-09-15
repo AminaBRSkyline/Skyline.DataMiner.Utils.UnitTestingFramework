@@ -2,7 +2,7 @@
 {
     using System;
 
-    internal sealed class RowChangedEventArgs : EventArgs
+    public sealed class RowChangedEventArgs : EventArgs
     {
         public RowChangedEventArgs(string primaryKey, RowChangeType changeType)
         {

@@ -11,7 +11,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Common
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
 
-    internal class ParametersAndTables
+    public class ParametersAndTables
     {
         // Dictionaries to allow fast lookup
         private readonly Dictionary<string, ParameterDefinition> parameterNameToDefinition = new Dictionary<string, ParameterDefinition>();

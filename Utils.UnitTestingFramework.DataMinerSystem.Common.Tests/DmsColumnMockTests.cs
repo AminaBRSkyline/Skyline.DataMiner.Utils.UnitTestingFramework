@@ -18,7 +18,7 @@
         public void Id_ReturnsColumnPid()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
 
             // Act
@@ -32,7 +32,7 @@
         public void Table_ReturnsOwningTable()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
 
             // Act
@@ -46,7 +46,7 @@
         public void GetValue_ReturnsStoredStringValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
 
@@ -63,7 +63,7 @@
         public void GetValue_WithKeyTypeOverload_ReturnsStoredValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
 
@@ -78,7 +78,7 @@
         public void GetValue_ReturnsStoredNumericValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
 
@@ -93,7 +93,7 @@
         public void SetValue_ThenGetValue_ReturnsSetValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
 
@@ -108,7 +108,7 @@
         public void SetValue_WithKeyTypeOverload_PersistsValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
 
@@ -123,7 +123,7 @@
         public void SetValue_WithKeyTypeAndExpectedChangesOverload_PersistsValue()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
 
@@ -138,7 +138,7 @@
         public void StartValueMonitor_Column_InvokesCallbackOnCellChange()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             var column = table.GetColumn<string>(902);
@@ -158,7 +158,7 @@
         public void StartValueMonitor_Column_WithTimeSpanOverload_InvokesCallbackOnCellChange()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             var column = table.GetColumn<string>(902);
@@ -178,7 +178,7 @@
         public void StartValueMonitor_Cell_InvokesCallbackOnMatchingCellChange()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             table.AddRow(new object[] { "two", "two-desc", 6.0, 7.0, 8.0 });
@@ -202,7 +202,7 @@
         public void StartValueMonitor_Cell_WithTimeSpanOverload_InvokesCallbackOnMatchingCellChange()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             var column = table.GetColumn<string>(902);
@@ -222,7 +222,7 @@
         public void StopValueMonitor_Column_DoesNotInvokeCallbackAfterStop()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             var column = table.GetColumn<string>(902);
@@ -242,7 +242,7 @@
         public void StopValueMonitor_Column_WithTimeSpanOverload_DoesNotInvokeCallbackAfterStop()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             var column = table.GetColumn<string>(902);
@@ -262,7 +262,7 @@
         public void StopValueMonitor_Cell_DoesNotInvokeCallbackAfterStop()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             var column = table.GetColumn<string>(902);
@@ -282,7 +282,7 @@
         public void StopValueMonitor_Cell_WithTimeSpanOverload_DoesNotInvokeCallbackAfterStop()
         {
             // Arrange
-            var mock = new IDmsElementMock(path);
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
             var table = mock.Object.GetTable(900);
             table.AddRow(new object[] { "one", "one-desc", 3.0, 4.0, 5.0 });
             var column = table.GetColumn<string>(902);

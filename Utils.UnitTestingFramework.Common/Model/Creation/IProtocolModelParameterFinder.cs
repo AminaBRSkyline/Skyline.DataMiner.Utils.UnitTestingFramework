@@ -2,7 +2,7 @@
 {
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
 
-    internal interface IProtocolModelParameterFinder
+    public interface IProtocolModelParameterFinder
     {
         IParamsParam FindParameter(int parameterId);
     }

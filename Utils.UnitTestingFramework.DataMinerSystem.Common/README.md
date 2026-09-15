@@ -7,7 +7,9 @@ The Unit Testing Framework was developed to simplify how Unit Tests are made whe
 This package provides a pre-arranged mock of `IDmsElement` (from the `Skyline.DataMiner.Core.DataMinerSystem.Common` NuGet package). It re-uses a protocol.xml file to determine which standalone parameters and tables an element of that protocol would contain, and keeps track of the values that are set on and retrieved from them.
 
 ```csharp
-var elementMock = new IDmsElementMock("path/to/protocol.xml");
+var dmsMock = new IDmsMock();
+var dmaMock = dmsMock.CreateAgent(agentId: 1, name: "Agent");
+var elementMock = dmaMock.CreateElement("path/to/protocol.xml", id: 1, agentId: 1, name: "Element");
 
 elementMock.Object.GetStandaloneParameter<string>(123).SetValue("new value");
 var parameterValue = elementMock.Object.GetStandaloneParameter<string>(123).GetValue(); // "new value"

@@ -4,7 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    internal class TableSchema
+    public class TableSchema
     {
         internal TableSchema(IEnumerable<ColumnDefinition> columns, ColumnDefinition primaryKeyColumn)
         {
