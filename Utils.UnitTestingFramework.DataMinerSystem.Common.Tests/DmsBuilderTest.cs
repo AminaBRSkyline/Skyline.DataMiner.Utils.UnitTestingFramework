@@ -211,5 +211,19 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             Assert.ThrowsExactly<ArgumentException>(() => builder.Build());
         }
+
+        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
+        [TestMethod]
+        public void Build_WithParameter_SetsStandaloneParameter()
+        {
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("protocol.xml")
+                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.WithParameter<int?>(800, 7)))
+                .Build();
+
+            var value = dmsMock.Object.GetElement("Element 33").GetStandaloneParameter<int?>(800).GetValue();
+
+            Assert.AreEqual((int?)7, value);
+        }
     }
 }

@@ -47,6 +47,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
 
             return this;
         }
+        public DmsElementBuilder WithParameter<T>(int parameterId, T value)
+        {
+            actions.Add(elementMock => elementMock.Object.GetStandaloneParameter<T>(parameterId).SetValue(value));
+            return this;
+        }
 
         internal void Build(IDmsMock dmsMock, IDmaMock dmaMock)
         {
