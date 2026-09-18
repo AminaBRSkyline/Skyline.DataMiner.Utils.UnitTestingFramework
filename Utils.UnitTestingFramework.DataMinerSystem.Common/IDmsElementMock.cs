@@ -251,7 +251,7 @@
             this.id = id;
             this.agentId = agentId;
             protocolModel = protocolModel ?? ProtocolModelBuilder.Build(pathToProtocolXml);
-            parametersAndTables = ParametersAndTablesBuilder.Build(protocolModel);
+            parametersAndTables = ParametersAndTablesBuilder.Build(protocolModel); // TODO get ParameterAndTableDefinitions from IDmsProtocolMock in Cache and initialize ParametersAndTables from that 
 
             foreach (var parameterModel in parametersAndTables.GetParameters())
             {
