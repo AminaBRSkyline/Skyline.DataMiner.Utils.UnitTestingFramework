@@ -22,8 +22,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithDomDefinition("module", () => CreateDefinition(firstDefinitionId, "First"))
-                .WithDomDefinition("module", () => CreateDefinition(secondDefinitionId, "Second"))
+                .WithDomDefinition(moduleId: "module", createDefinition: () => CreateDefinition(firstDefinitionId, "First"))
+                .WithDomDefinition(moduleId: "module", createDefinition: () => CreateDefinition(secondDefinitionId, "Second"))
                 .Build();
             var helper = new DomHelper(dmsMock.Connection.HandleMessages, "module");
 
@@ -41,8 +41,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithDomDefinition("first-module", () => CreateDefinition(firstDefinitionId, "First definition"))
-                .WithDomDefinition("second-module", () => CreateDefinition(secondDefinitionId, "Second definition"))
+                .WithDomDefinition(moduleId: "first-module", createDefinition: () => CreateDefinition(firstDefinitionId, "First definition"))
+                .WithDomDefinition(moduleId: "second-module", createDefinition: () => CreateDefinition(secondDefinitionId, "Second definition"))
                 .Build();
             var firstHelper = new DomHelper(dmsMock.Connection.HandleMessages, "first-module");
             var secondHelper = new DomHelper(dmsMock.Connection.HandleMessages, "second-module");
@@ -65,16 +65,16 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithDomDefinition("complete-module", () => definition)
-                .WithSectionDefinition("complete-module", () => new SectionDefinitionBuilder()
+                .WithDomDefinition(moduleId: "complete-module", createDefinition: () => definition)
+                .WithSectionDefinition(moduleId: "complete-module", createDefinition: () => new SectionDefinitionBuilder()
                     .WithID(sectionDefinitionId)
                     .WithName("Section definition")
                     .Build())
-                .WithDomBehaviorDefinition("complete-module", () => new DomBehaviorDefinitionBuilder()
+                .WithDomBehaviorDefinition(moduleId: "complete-module", createDefinition: () => new DomBehaviorDefinitionBuilder()
                     .WithID(behaviorDefinitionId)
                     .WithName("Behavior definition")
                     .Build())
-                .WithDomInstance("complete-module", () => new DomInstanceBuilder(definition)
+                .WithDomInstance(moduleId: "complete-module", createInstance: () => new DomInstanceBuilder(definition)
                     .WithID(instanceId)
                     .Build())
                 .Build();
@@ -95,7 +95,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithDomDefinition("dms-module", () => new DomDefinitionBuilder()
+                .WithDomDefinition(moduleId: "dms-module", createDefinition: () => new DomDefinitionBuilder()
                     .WithID(definitionId)
                     .WithName("DMS definition")
                     .Build())
@@ -111,7 +111,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void Build_ThrowsInvalidOperationException_WhenDomFactoryReturnsNull()
         {
             // Arrange
-            var builder = new DmsBuilder().WithDomDefinition("module", () => null);
+            var builder = new DmsBuilder()
+                .WithDomDefinition(moduleId: "module", createDefinition: () => null);
 
             // Act and assert
             Assert.ThrowsExactly<InvalidOperationException>(() => builder.Build());
@@ -120,7 +121,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         [TestMethod]
         public void WithDomBehaviorDefinition_ThrowsArgumentNullException_WithNullFactory()
         {
-            Assert.ThrowsExactly<ArgumentNullException>(() => new DmsBuilder().WithDomBehaviorDefinition("module", null));
+            // Arrange
+            var builder = new DmsBuilder();
+
+            // Act and assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => builder.WithDomBehaviorDefinition(moduleId: "module", createDefinition: null));
         }
 
         [TestMethod]
@@ -128,11 +133,12 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var factoryInvoked = false;
-            var builder = new DmsBuilder().WithDomDefinition("module", () =>
-            {
-                factoryInvoked = true;
-                return CreateDefinition(Guid.NewGuid(), "Definition");
-            });
+            var builder = new DmsBuilder()
+                .WithDomDefinition(moduleId: "module", createDefinition: () =>
+                {
+                    factoryInvoked = true;
+                    return CreateDefinition(Guid.NewGuid(), "Definition");
+                });
 
             Assert.IsFalse(factoryInvoked);
 
@@ -146,25 +152,43 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         [TestMethod]
         public void WithDomDefinition_ThrowsArgumentException_WithEmptyModuleId()
         {
-            Assert.ThrowsExactly<ArgumentException>(() => new DmsBuilder().WithDomDefinition(String.Empty, () => CreateDefinition(Guid.NewGuid(), "Definition")));
+            // Arrange
+            var builder = new DmsBuilder();
+
+            // Act and assert
+            Assert.ThrowsExactly<ArgumentException>(() => builder.WithDomDefinition(
+                moduleId: String.Empty,
+                createDefinition: () => CreateDefinition(Guid.NewGuid(), "Definition")));
         }
 
         [TestMethod]
         public void WithDomDefinition_ThrowsArgumentNullException_WithNullFactory()
         {
-            Assert.ThrowsExactly<ArgumentNullException>(() => new DmsBuilder().WithDomDefinition("module", null));
+            // Arrange
+            var builder = new DmsBuilder();
+
+            // Act and assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => builder.WithDomDefinition(moduleId: "module", createDefinition: null));
         }
 
         [TestMethod]
         public void WithDomInstance_ThrowsArgumentNullException_WithNullFactory()
         {
-            Assert.ThrowsExactly<ArgumentNullException>(() => new DmsBuilder().WithDomInstance("module", null));
+            // Arrange
+            var builder = new DmsBuilder();
+
+            // Act and assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => builder.WithDomInstance(moduleId: "module", createInstance: null));
         }
 
         [TestMethod]
         public void WithSectionDefinition_ThrowsArgumentNullException_WithNullFactory()
         {
-            Assert.ThrowsExactly<ArgumentNullException>(() => new DmsBuilder().WithSectionDefinition("module", null));
+            // Arrange
+            var builder = new DmsBuilder();
+
+            // Act and assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => builder.WithSectionDefinition(moduleId: "module", createDefinition: null));
         }
 
         private static DomDefinition CreateDefinition(Guid id, string name)

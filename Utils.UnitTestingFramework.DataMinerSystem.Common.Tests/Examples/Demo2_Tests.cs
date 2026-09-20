@@ -18,7 +18,7 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
         private const string ProtocolPath = "Examples/protocol.xml";
 
         [TestMethod]
-        public void ConnectionListener_TrackParameterChanges_ShouldReturnNumberOfInvokations()
+        public void ConnectionListener_ReturnsInvocationCounts_WhenTrackingStandaloneAndTableChanges()
         {
             // Arrange
             var dmsMock = new IDmsMock();

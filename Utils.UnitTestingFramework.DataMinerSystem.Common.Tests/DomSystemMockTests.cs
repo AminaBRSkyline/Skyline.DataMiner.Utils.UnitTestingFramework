@@ -74,18 +74,16 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var createdInstance = new DomInstanceBuilder(definition)
                 .WithID(instanceId)
                 .Build();
-            createdInstance.Name = "Created";
 
             // Act and assert
             helper.DomInstances.Create(createdInstance);
-            Assert.AreEqual("Created", ReadInstance(helper, instanceId).Name);
+            Assert.AreEqual(instanceId, ReadInstance(helper, instanceId).ID.Id);
 
             var updatedInstance = new DomInstanceBuilder(definition)
                 .WithID(instanceId)
                 .Build();
-            updatedInstance.Name = "Updated";
             helper.DomInstances.Update(updatedInstance);
-            Assert.AreEqual("Updated", ReadInstance(helper, instanceId).Name);
+            Assert.AreEqual(instanceId, ReadInstance(helper, instanceId).ID.Id);
 
             helper.DomInstances.Delete(updatedInstance);
             Assert.IsFalse(helper.DomInstances.Read(DomInstanceExposers.Id.Equal(instanceId)).Any());

@@ -57,9 +57,9 @@
 
         internal string PathToProtocolXml { get; }
 
-        public string Name { get; set; }
+        public new string Name { get; }
 
-        public string ReferencedVersion { get; set; }
+        public string ReferencedVersion { get; }
 
         public ProtocolType Type { get; set; }
 

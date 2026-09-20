@@ -1,4 +1,4 @@
-﻿namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
+namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
 {
     using System;
     using System.Linq;
@@ -14,62 +14,6 @@
     [DeploymentItem("Examples/protocol.xml", "Examples")]
     public class Demo_Tests
     {
-        [TestMethod]
-        public void FindSimilarOnSameDma_ReturnsMatchingElementsFromSameDma_WithoutBuilders()
-        {
-            // Arrange
-            var dmsMock = new IDmsMock();
-            var firstDma = dmsMock.CreateAgent(1, "DMA 1");
-            var secondDma = dmsMock.CreateAgent(2, "DMA 2");
-            var thirdDma = dmsMock.CreateAgent(3, "DMA 3");
-            string protocolXmlPath = "Examples/protocol.xml";
-
-            firstDma.CreateElement(protocolXmlPath, id: 11, name: "Element A");
-            firstDma.CreateElement(protocolXmlPath, id: 12, name: "Element B");
-
-            secondDma.CreateElement(protocolXmlPath, id: 21, name: "Element C");
-
-            thirdDma.CreateElement(protocolXmlPath, id: 31, name: "Element D");
-            thirdDma.CreateElement(protocolXmlPath, id: 32, name: "Element E");
-            thirdDma.CreateElement(protocolXmlPath, id: 33, name: "Element F");
-
-            // Act
-            var element = dmsMock.GetElementMock("Element A");
-            var similarElements = ElementFinder.FindSimilarOnSameDma(element.Object);
-
-            // Assert
-            similarElements.Should().HaveCount(2);
-            similarElements.Should().Contain(element.Object);
-            similarElements.Should().Contain(element => element.Name == "Element B");
-        }
-
-        [TestMethod]
-        public void FindSimilarOnSameDma_ReturnsMatchingElementsFromSameDma_WithBuilders()
-        {
-            // Arrange
-            var dmsMock = new DmsBuilder()
-                .WithProtocol("Examples/protocol.xml")
-                .WithDma(id: 1, dma => dma
-                    .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol")
-                    .WithElement(id: 12, name: "Element B", protocolName: "DemoProtocol"))
-                .WithDma(id: 2, dma => dma
-                    .WithElement(id: 21, name: "Element C", protocolName: "DemoProtocol"))
-                .WithDma(id: 3, dma => dma
-                    .WithElement(id: 31, name: "Element D", protocolName: "DemoProtocol")
-                    .WithElement(id: 32, name: "Element E", protocolName: "DemoProtocol")
-                    .WithElement(id: 33, name: "Element F", protocolName: "DemoProtocol"))
-                .Build();
-
-            // Act
-            var element = dmsMock.GetElementMock("Element A");
-            var similarElements = ElementFinder.FindSimilarOnSameDma(element.Object);
-
-            // Assert
-            similarElements.Should().HaveCount(2);
-            similarElements.Should().Contain(element.Object);
-            similarElements.Should().Contain(element => element.Name == "Element B");
-        }
-
         [TestMethod]
         public void FindOtherViewsOnSameDms_ReturnsAllViewsExceptSelectedView_WithBuilders()
         {
@@ -125,6 +69,62 @@
         }
 
         [TestMethod]
+        public void FindSimilarOnSameDma_ReturnsMatchingElementsFromSameDma_WithBuilders()
+        {
+            // Arrange
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("Examples/protocol.xml")
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol")
+                    .WithElement(id: 12, name: "Element B", protocolName: "DemoProtocol"))
+                .WithDma(id: 2, dma => dma
+                    .WithElement(id: 21, name: "Element C", protocolName: "DemoProtocol"))
+                .WithDma(id: 3, dma => dma
+                    .WithElement(id: 31, name: "Element D", protocolName: "DemoProtocol")
+                    .WithElement(id: 32, name: "Element E", protocolName: "DemoProtocol")
+                    .WithElement(id: 33, name: "Element F", protocolName: "DemoProtocol"))
+                .Build();
+
+            // Act
+            var element = dmsMock.GetElementMock("Element A");
+            var similarElements = ElementFinder.FindSimilarOnSameDma(element.Object);
+
+            // Assert
+            similarElements.Should().HaveCount(2);
+            similarElements.Should().Contain(element.Object);
+            similarElements.Should().Contain(element => element.Name == "Element B");
+        }
+
+        [TestMethod]
+        public void FindSimilarOnSameDma_ReturnsMatchingElementsFromSameDma_WithoutBuilders()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var firstDma = dmsMock.CreateAgent(1, "DMA 1");
+            var secondDma = dmsMock.CreateAgent(2, "DMA 2");
+            var thirdDma = dmsMock.CreateAgent(3, "DMA 3");
+            string protocolXmlPath = "Examples/protocol.xml";
+
+            firstDma.CreateElement(protocolXmlPath, id: 11, name: "Element A");
+            firstDma.CreateElement(protocolXmlPath, id: 12, name: "Element B");
+
+            secondDma.CreateElement(protocolXmlPath, id: 21, name: "Element C");
+
+            thirdDma.CreateElement(protocolXmlPath, id: 31, name: "Element D");
+            thirdDma.CreateElement(protocolXmlPath, id: 32, name: "Element E");
+            thirdDma.CreateElement(protocolXmlPath, id: 33, name: "Element F");
+
+            // Act
+            var element = dmsMock.GetElementMock("Element A");
+            var similarElements = ElementFinder.FindSimilarOnSameDma(element.Object);
+
+            // Assert
+            similarElements.Should().HaveCount(2);
+            similarElements.Should().Contain(element.Object);
+            similarElements.Should().Contain(element => element.Name == "Element B");
+        }
+
+        [TestMethod]
         public void Repoll_ReplacesExistingRowsWithPolledRows_WithBuilders()
         {
             // Arrange
@@ -150,7 +150,7 @@
                 ["3", "Value3"]
             };
 
-            var dmsTableMock = dmsMock.GetElementMock("Element").GetDmsTableMock(100);
+            var dmsTableMock = dmsMock.GetElementMock("Element A").GetDmsTableMock(100);
 
             dmsTableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
             dmsTableMock.AllRows.Should().BeEquivalentTo(expectedRows);
@@ -183,7 +183,7 @@
         }
 
         [TestMethod]
-        public void RestartAndEnablePolling_WhenStartupCompletes_SetsPollingStatusToEnabled_WithBuilders()
+        public void RestartAndEnablePolling_SetsPollingStatusToEnabledAfterCompletedStartup_WithBuilders()
         {
             // Arrange
             var dmsMock = new DmsBuilder()
@@ -215,7 +215,7 @@
         }
 
         [TestMethod]
-        public void RestartAndEnablePolling_WhenStartupCompletes_SetsPollingStatusToEnabled_WithoutBuilders()
+        public void RestartAndEnablePolling_SetsPollingStatusToEnabledAfterCompletedStartup_WithoutBuilders()
         {
             // Arrange
             var dmsMock = new IDmsMock();

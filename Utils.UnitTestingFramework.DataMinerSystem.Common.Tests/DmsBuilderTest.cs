@@ -24,7 +24,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void Build_AddsProtocolToDms_WithProtocolXml()
         {
             // Act
-            var dmsMock = new DmsBuilder().WithProtocol("protocol.xml").Build();
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("protocol.xml")
+                .Build();
 
             // Assert
             var protocol = dmsMock.Object.GetProtocols().Single();
@@ -47,7 +49,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             // Act
             var dmsMock = new DmsBuilder()
                 .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.WithTable(tableId: 900, rows: new object[][] { row })))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .WithTable(tableId: 900, rows: [row])))
                 .Build();
 
             // Assert
@@ -64,8 +68,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var dmsMock = new DmsBuilder()
                 .WithProtocol("protocol.xml")
                 .WithView(viewId: 55)
-                .WithDma(id: 1, configure: dma => dma
-                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.UnderView(viewId: 55))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .UnderView(viewId: 55))
                     .WithElement(id: 44, name: "Element 44", protocolName: ProtocolName))
                 .Build();
 
@@ -99,15 +104,16 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithProtocol("CompleteProtocol", protocol => protocol
+                .WithProtocol(name: "CompleteProtocol", configure: protocol => protocol
                     .AddParameterDefinition(parameterDefinition)
-                    .AddTableDefinition(200, tableSchema))
-                .WithView(55, "Complete view")
-                .WithDma(1, dma => dma.WithElement(10, "Complete element", "CompleteProtocol", configure: element => element
-                    .UnderView(55)
-                    .WithParameter<int?>(100, 7)
-                    .WithTable(200, new[] { row })))
-                .WithDomDefinition("complete-module", () => new DomDefinitionBuilder()
+                    .AddTableDefinition(tableId: 200, tableSchema: tableSchema))
+                .WithView(viewId: 55, name: "Complete view")
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 10, name: "Complete element", protocolName: "CompleteProtocol", configure: element => element
+                        .UnderView(viewId: 55)
+                        .WithParameter<int?>(parameterId: 100, value: 7)
+                        .WithTable(tableId: 200, rows: [row])))
+                .WithDomDefinition(moduleId: "complete-module", createDefinition: () => new DomDefinitionBuilder()
                     .WithID(domDefinitionId)
                     .WithName("DOM definition")
                     .Build())
@@ -136,11 +142,13 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithProtocol(protocolName, protocol => protocol.AddParameterDefinition(firstParameter), firstVersion)
-                .WithProtocol(protocolName, protocol => protocol.AddParameterDefinition(secondParameter), secondVersion)
-                .WithDma(1, dma => dma
-                    .WithElement(10, "First version element", protocolName, firstVersion)
-                    .WithElement(20, "Second version element", protocolName, secondVersion))
+                .WithProtocol(name: protocolName, configure: protocol => protocol
+                    .AddParameterDefinition(firstParameter), version: firstVersion)
+                .WithProtocol(name: protocolName, configure: protocol => protocol
+                    .AddParameterDefinition(secondParameter), version: secondVersion)
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 10, name: "First version element", protocolName: protocolName, protocolVersion: firstVersion)
+                    .WithElement(id: 20, name: "Second version element", protocolName: protocolName, protocolVersion: secondVersion))
                 .Build();
 
             // Assert
@@ -170,10 +178,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithProtocol("CustomProtocol", protocol => protocol
+                .WithProtocol(name: "CustomProtocol", configure: protocol => protocol
                     .AddParameterDefinition(parameterDefinition)
-                    .AddTableDefinition(200, tableSchema))
-                .WithDma(1, dma => dma.WithElement(10, "Element 10", "CustomProtocol"))
+                    .AddTableDefinition(tableId: 200, tableSchema: tableSchema))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 10, name: "Element 10", protocolName: "CustomProtocol"))
                 .Build();
 
             // Assert
@@ -205,13 +214,17 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         [TestMethod]
         public void Build_SetsStandaloneParameter_WithParameter()
         {
+            // Act
             var dmsMock = new DmsBuilder()
                 .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.WithParameter<int?>(800, 7)))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .WithParameter<int?>(parameterId: 800, value: 7)))
                 .Build();
 
             var value = dmsMock.Object.GetElement("Element 33").GetStandaloneParameter<int?>(800).GetValue();
 
+            // Assert
             Assert.AreEqual((int?)7, value);
         }
 
@@ -233,7 +246,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             // Arrange
             var builder = new DmsBuilder()
                 .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.WithTable(tableId: 900, rows: null)));
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .WithTable(tableId: 900, rows: null)));
 
             // Act & Assert
             Assert.ThrowsExactly<ArgumentNullException>(() => builder.Build());
@@ -243,7 +258,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void Build_ThrowsFileNotFoundException_WithMissingProtocolXml()
         {
             // Arrange
-            var builder = new DmsBuilder().WithProtocol("missing-protocol.xml");
+            var builder = new DmsBuilder()
+                .WithProtocol("missing-protocol.xml");
 
             // Act & Assert
             Assert.ThrowsExactly<System.IO.FileNotFoundException>(() => builder.Build());
@@ -254,7 +270,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var builder = new DmsBuilder()
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: "Unknown"));
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: "Unknown"));
 
             // Act & Assert
             Assert.ThrowsExactly<InvalidOperationException>(() => builder.Build());
@@ -267,7 +284,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             // Arrange
             var builder = new DmsBuilder()
                 .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "2.0.0.0"));
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "2.0.0.0"));
 
             // Act & Assert
             Assert.ThrowsExactly<InvalidOperationException>(() => builder.Build());
@@ -280,7 +298,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             // Act
             var dmsMock = new DmsBuilder()
                 .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "1.0.0.1"))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "1.0.0.1"))
                 .Build();
 
             // Assert
@@ -294,7 +313,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var configured = false;
-            var builder = new DmsBuilder().WithDma(id: 1, configure: dma => configured = true);
+            var builder = new DmsBuilder()
+                .WithDma(id: 1, configure: dma => configured = true);
 
             Assert.IsFalse(configured);
 
@@ -315,11 +335,12 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var builder = new DmsBuilder()
                 .WithProtocol("protocol.xml")
                 .WithView(viewId: 55)
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element =>
-                {
-                    configured = true;
-                    element.UnderView(viewId: 55);
-                }));
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element =>
+                    {
+                        configured = true;
+                        element.UnderView(viewId: 55);
+                    }));
 
             Assert.IsFalse(configured);
 
@@ -336,7 +357,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var configured = false;
-            var builder = new DmsBuilder().WithProtocol("Protocol", _ => configured = true);
+            var builder = new DmsBuilder()
+                .WithProtocol("Protocol", _ => configured = true);
 
             Assert.IsFalse(configured);
 
@@ -350,7 +372,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         [TestMethod]
         public void WithProtocol_ThrowsArgumentNullException_WithNullConfiguration()
         {
-            Assert.ThrowsExactly<ArgumentNullException>(() => new DmsBuilder().WithProtocol("Protocol", null));
+            // Arrange
+            var builder = new DmsBuilder();
+
+            // Act and assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => builder.WithProtocol("Protocol", null));
         }
 
     }

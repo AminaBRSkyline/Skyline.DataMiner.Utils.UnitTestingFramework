@@ -17,7 +17,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>SkylineCommunications</Authors>
     <Company>Skyline Communications</Company>
-    <Description>The Unit Testing Framework was developed to simplify how Unit Tests are made when developing Connectors. This package provides a pre-arranged mock of IDmsElement (Skyline.DataMiner.Core.DataMinerSystem.Common) so developers can unit test code that interacts with elements through the DataMiner System interfaces.</Description>
+    <Description>Provides in-memory mocks and builders for unit testing code that uses the DataMiner System Common interfaces, including DMAs, elements, services, views, protocols, parameters, tables, SLNet subscriptions, custom messages, and DOM.</Description>
     <OutputType>Library</OutputType>
     <RepositoryUrl>https://github.com/SkylineCommunications/Skyline.DataMiner.Utils.UnitTestingFramework</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="CLASS_DIAGRAM.md" Pack="true" PackagePath="" />
     <None Include="..\Utils.UnitTestingFramework.Protocol\LICENSE.txt" Pack="true" PackagePath="" />
     <None Include="..\Utils.UnitTestingFramework.Protocol\nuget\Icon.png" Pack="true" PackagePath="" />
   </ItemGroup>

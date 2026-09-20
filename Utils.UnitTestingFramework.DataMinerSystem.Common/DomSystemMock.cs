@@ -21,7 +21,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         /// Initializes a new instance of the <see cref="DomSystemMock"/> class.
         /// </summary>
         /// <param name="notifySubscriptions">The callback used to publish DOM instance changes.</param>
-        public DomSystemMock(Action<DMSMessage> notifySubscriptions)
+        internal DomSystemMock(Action<DMSMessage> notifySubscriptions)
         {
             this.notifySubscriptions = notifySubscriptions ?? throw new ArgumentNullException(nameof(notifySubscriptions));
         }
@@ -82,7 +82,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         /// <summary>
         /// Handles DOM SLNet messages sent through the shared connection mock.
         /// </summary>
-        public DMSMessage[] HandleMessages(DMSMessage[] messages)
+        internal DMSMessage[] HandleMessages(DMSMessage[] messages)
         {
             if (messages == null)
             {

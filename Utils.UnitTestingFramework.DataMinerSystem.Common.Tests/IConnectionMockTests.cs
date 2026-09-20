@@ -392,7 +392,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             // Arrange
             var definitionId = Guid.NewGuid();
             var dmsMock = new DmsBuilder()
-                .WithDomDefinition("module", () => new DomDefinitionBuilder()
+                .WithDomDefinition(moduleId: "module", createDefinition: () => new DomDefinitionBuilder()
                     .WithID(definitionId)
                     .WithName("Definition")
                     .Build())
