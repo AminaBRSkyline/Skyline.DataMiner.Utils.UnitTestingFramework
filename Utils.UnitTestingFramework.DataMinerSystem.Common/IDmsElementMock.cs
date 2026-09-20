@@ -10,11 +10,10 @@
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Selectors;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Monitors;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Templates;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
-    using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
     using ParameterChangeEventMessage = Skyline.DataMiner.Net.Messages.ParameterChangeEventMessage;
     using ParameterTableUpdateEventMessage = Skyline.DataMiner.Net.Messages.ParameterTableUpdateEventMessage;
     using ParameterValue = Skyline.DataMiner.Net.Messages.ParameterValue;
@@ -38,7 +37,6 @@
         private ElementState state = ElementState.Active;
         private readonly int agentId;
         private readonly int id;
-        private readonly string pathToProtocolXml;
         private readonly Dictionary<string, Action<ElementAlarmlevelChange>> alarmLevelMonitors = new Dictionary<string, Action<ElementAlarmlevelChange>>();
         private readonly Dictionary<string, Action<ElementNameChange>> nameMonitors = new Dictionary<string, Action<ElementNameChange>>();
         private readonly Dictionary<string, Action<ElementStateChange>> stateMonitors = new Dictionary<string, Action<ElementStateChange>>();
@@ -240,18 +238,24 @@
         /// <summary>
         /// Initializes a new instance of the <see cref="IDmsElementMock"/> class.
         /// </summary>
-        /// <param name="pathToProtocolXml">The path to the protocol.xml file.</param>
+        /// <param name="protocolName">The protocol name.</param>
+        /// <param name="protocolVersion">The protocol version.</param>
         /// <param name="id">The element ID.</param>
         /// <param name="agentId">The DataMiner Agent ID.</param>
         /// <param name="name">The element name.</param>
-        internal IDmsElementMock(Cache cache, string pathToProtocolXml, int id = 0, int agentId = 0, string name = "Element", IProtocolModel protocolModel = null)
+        internal IDmsElementMock(Cache cache, string protocolName, string protocolVersion = IDmsProtocolMock.DefaultVersion, int id = 0, int agentId = 0, string name = "Element")
         {
             this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            this.pathToProtocolXml = pathToProtocolXml;
             this.id = id;
             this.agentId = agentId;
-            protocolModel = protocolModel ?? ProtocolModelBuilder.Build(pathToProtocolXml);
-            parametersAndTables = ParametersAndTablesBuilder.Build(protocolModel); // TODO get ParameterAndTableDefinitions from IDmsProtocolMock in Cache and initialize ParametersAndTables from that 
+
+            var protocolMock = cache.GetProtocol(protocolName, protocolVersion);
+            if (protocolMock == null)
+            {
+                throw new ProtocolNotFoundException(protocolName, protocolVersion);
+            }
+
+            parametersAndTables = new ParametersAndTables(protocolMock.Definitions);
 
             foreach (var parameterModel in parametersAndTables.GetParameters())
             {
@@ -263,15 +267,8 @@
                 tableModel.RowChanged += TableModel_RowChanged;
             }
 
-            var protocolMock = cache.GetProtocol(protocolModel.Protocol.Name.Value, protocolModel.Protocol.Version.Value);
-            if (protocolMock == null)
-            {
-                protocolMock = new IDmsProtocolMock(protocolModel, pathToProtocolXml);
-                cache.AddProtocol(protocolMock);
-            }
-
-            protocolName = protocolMock.Name;
-            protocolVersion = protocolMock.ReferencedVersion;
+            this.protocolName = protocolMock.Name;
+            this.protocolVersion = protocolMock.ReferencedVersion;
 
             Setup(e => e.AdvancedSettings).Returns(() => AdvancedSettings);
 
@@ -480,7 +477,7 @@
                 throw new AgentNotFoundException(agent.Id);
             }
 
-            var duplicate = targetAgentMock.CreateElement(pathToProtocolXml, targetAgentMock.GetNextElementId(), newElementName);
+            var duplicate = targetAgentMock.CreateElement(protocolName, targetAgentMock.GetNextElementId(), newElementName, protocolVersion);
             duplicate.Description = Description;
             duplicate.Type = Type;
             duplicate.AlarmTemplate = AlarmTemplate;

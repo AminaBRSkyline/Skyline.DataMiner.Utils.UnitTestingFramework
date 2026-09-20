@@ -20,6 +20,28 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Common
 
         private readonly Dictionary<int, ITableModel> tablesPerTablePid = new Dictionary<int, ITableModel>();
 
+        public ParametersAndTables()
+        {
+        }
+
+        public ParametersAndTables(ParameterAndTableDefinitions definitions)
+        {
+            if (definitions == null)
+            {
+                throw new ArgumentNullException(nameof(definitions));
+            }
+
+            foreach (var parameterDefinition in definitions.GetParameterDefinitions())
+            {
+                AddParameter(new ParameterModel(parameterDefinition, definitions.GetInitialParameterValue(parameterDefinition.Pid)));
+            }
+
+            foreach (var tableDefinition in definitions.GetTableDefinitions())
+            {
+                AddTable(new TableModel(tableDefinition.Key, tableDefinition.Value));
+            }
+        }
+
         public bool ParameterExists(int parameterId)
         {
             return parameterIdToDefinition.ContainsKey(parameterId);

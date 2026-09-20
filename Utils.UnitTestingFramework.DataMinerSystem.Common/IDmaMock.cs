@@ -5,8 +5,8 @@
     using System.Linq;
     using System.Text.RegularExpressions;
     using Moq;
-    using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
 
     /// <summary>
     /// A pre-arranged mock of <see cref="IDma"/>.
@@ -160,13 +160,35 @@
         /// <summary>
         /// Creates an element mock hosted on this DataMiner Agent.
         /// </summary>
-        /// <param name="pathToProtocolXml">The path to the protocol.xml file.</param>
+        /// <param name="protocolName">The protocol name, or a protocol XML path for backwards compatibility.</param>
         /// <param name="id">The element ID.</param>
         /// <param name="name">The element name.</param>
+        /// <param name="protocolVersion">The protocol version.</param>
         /// <returns>The created element mock.</returns>
-        public IDmsElementMock CreateElement(string pathToProtocolXml, int id = 0, string name = "Element")
+        public IDmsElementMock CreateElement(string protocolName, int id = 0, string name = "Element", string protocolVersion = IDmsProtocolMock.DefaultVersion)
         {
-            return CreateElement(pathToProtocolXml, id, name, null);
+            var protocolMock = cache.GetProtocol(protocolName, protocolVersion);
+
+            if (protocolMock == null && protocolName != null && protocolName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+            {
+                var protocolModel = ProtocolModelBuilder.Build(protocolName);
+                var modelName = protocolModel.Protocol.Name?.Value;
+                var modelVersion = protocolModel.Protocol.Version?.Value;
+
+                protocolMock = cache.GetProtocol(modelName, modelVersion);
+                if (protocolMock == null)
+                {
+                    protocolMock = new IDmsProtocolMock(protocolModel, protocolName);
+                    cache.AddProtocol(protocolMock);
+                }
+            }
+
+            if (protocolMock == null)
+            {
+                throw new ProtocolNotFoundException(protocolName, protocolVersion);
+            }
+
+            return CreateElement(protocolMock, id, name);
         }
 
         internal IDmsElementMock CreateElement(IDmsProtocolMock protocolMock, int id, string name)
@@ -176,12 +198,7 @@
                 throw new ArgumentNullException(nameof(protocolMock));
             }
 
-            return CreateElement(protocolMock.PathToProtocolXml, id, name, protocolMock.ProtocolModel);
-        }
-
-        private IDmsElementMock CreateElement(string pathToProtocolXml, int id, string name, IProtocolModel protocolModel)
-        {
-            var elementMock = new IDmsElementMock(cache, pathToProtocolXml, id, Object.Id, name, protocolModel);
+            var elementMock = new IDmsElementMock(cache, protocolMock.Name, protocolMock.ReferencedVersion, id, Object.Id, name);
 
             cache.AddElement(elementMock);
 

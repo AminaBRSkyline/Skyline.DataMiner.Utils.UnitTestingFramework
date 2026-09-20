@@ -10,7 +10,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
     using Moq;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.DOM;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
 
     /// <summary>
@@ -24,11 +23,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         /// Gets the SLNet connection mock shared by this DataMiner System and all its elements.
         /// </summary>
         public IConnectionMock Connection { get; }
-
-        /// <summary>
-        /// Gets the communication interface.
-        /// </summary>
-        public ICommunication Communication { get; set; } = new Mock<ICommunication>().Object;
 
         /// <summary>
         /// Gets the DOM state that belongs to this DataMiner System mock.
@@ -46,11 +40,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             cache = new Cache();
             cache.AddDms(this);
             Connection = cache.GetConnection();
-            Dom = new DomSystemMock(
-                Connection.HandleMessages,
-                (message, applyFilters) => Connection.NotifySubscriptions(message, applyFilters));
+            Dom = new DomSystemMock(Connection.NotifySubscriptions);
             Connection.SetMessageHandler(Dom.HandleMessages);
-            Setup(dms => dms.Communication).Returns(() => Communication);
             Setup(dms => dms.ElementPropertyDefinitions).Returns(() => ElementPropertyDefinitions);
             Setup(dms => dms.ServicePropertyDefinitions).Returns(() => ServicePropertyDefinitions);
             Setup(dms => dms.ViewPropertyDefinitions).Returns(() => ViewPropertyDefinitions);
@@ -262,6 +253,16 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             var protocolMock = new IDmsProtocolMock(protocolModel, pathToProtocolXml);
             cache.AddProtocol(protocolMock);
             return protocolMock;
+        }
+
+        internal void AddProtocol(IDmsProtocolMock protocolMock)
+        {
+            if (protocolMock == null)
+            {
+                throw new ArgumentNullException(nameof(protocolMock));
+            }
+
+            cache.AddProtocol(protocolMock);
         }
 
         internal IDmsProtocolMock GetProtocolMock(string name, string version = null)

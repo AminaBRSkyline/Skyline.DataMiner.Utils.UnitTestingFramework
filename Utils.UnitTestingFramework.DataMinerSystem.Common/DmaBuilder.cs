@@ -18,7 +18,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             this.name = name;
         }
 
-        public DmaBuilder WithElement(int id, string name, string protocolName, string protocolVersion = null, Action<DmsElementBuilder> configure = null)
+        public DmaBuilder WithElement(int id, string name, string protocolName, string protocolVersion = IDmsProtocolMock.DefaultVersion, Action<DmsElementBuilder> configure = null)
         {
             elements.Add((dmsMock, dmaMock) =>
             {

@@ -16,6 +16,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
     public class IConnectionMock : Mock<IConnection>
     {
         private readonly ConcurrentDictionary<string, SubscriptionSet> subscriptions = new ConcurrentDictionary<string, SubscriptionSet>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<Type, Func<DMSMessage, DMSMessage>> customMessageHandlers = new ConcurrentDictionary<Type, Func<DMSMessage, DMSMessage>>();
         private Func<DMSMessage[], DMSMessage[]> messageHandler = messages => Array.Empty<DMSMessage>();
 
         /// <summary>
@@ -38,6 +39,20 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 .Callback((string subscriptionId, SubscriptionFilter[] filters) => ReplaceSubscription(subscriptionId, filters));
             Setup(connection => connection.ClearSubscriptions(It.IsAny<string>()))
                 .Callback((string subscriptionId) => ClearSubscriptions(subscriptionId));
+        }
+
+        /// <summary>
+        /// Raises <see cref="IConnection.OnNewMessage"/> for every active subscription.
+        /// </summary>
+        /// <param name="message">The message to publish.</param>
+        public void NotifySubscriptions(DMSMessage message)
+        {
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            NotifySubscriptions(message, filters => message);
         }
 
         /// <summary>
@@ -68,7 +83,65 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 throw new ArgumentNullException(nameof(messages));
             }
 
-            return messageHandler(messages) ?? Array.Empty<DMSMessage>();
+            var responses = new List<DMSMessage>();
+
+            foreach (var message in messages)
+            {
+                if (message == null)
+                {
+                    throw new ArgumentException("The message collection cannot contain null values.", nameof(messages));
+                }
+
+                if (customMessageHandlers.TryGetValue(message.GetType(), out var customHandler))
+                {
+                    var customResponse = customHandler(message);
+                    if (customResponse != null)
+                    {
+                        responses.Add(customResponse);
+                    }
+
+                    continue;
+                }
+
+                var defaultResponses = messageHandler(new[] { message });
+                if (defaultResponses != null)
+                {
+                    responses.AddRange(defaultResponses.Where(response => response != null));
+                }
+            }
+
+            return responses.ToArray();
+        }
+
+        /// <summary>
+        /// Registers a request handler for a custom SLNet message type.
+        /// Registered handlers are evaluated before the built-in message handler.
+        /// </summary>
+        /// <typeparam name="TMessage">The request message type.</typeparam>
+        /// <param name="handler">The handler that creates the response message.</param>
+        public void RegisterMessageHandler<TMessage>(Func<TMessage, DMSMessage> handler)
+            where TMessage : DMSMessage
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            if (!customMessageHandlers.TryAdd(typeof(TMessage), message => handler((TMessage)message)))
+            {
+                throw new InvalidOperationException($"A message handler for '{typeof(TMessage).FullName}' is already registered.");
+            }
+        }
+
+        /// <summary>
+        /// Removes the custom request handler registered for an SLNet message type.
+        /// </summary>
+        /// <typeparam name="TMessage">The request message type.</typeparam>
+        /// <returns><see langword="true"/> when a handler was removed; otherwise, <see langword="false"/>.</returns>
+        public bool UnregisterMessageHandler<TMessage>()
+            where TMessage : DMSMessage
+        {
+            return customMessageHandlers.TryRemove(typeof(TMessage), out _);
         }
 
         internal void SetMessageHandler(Func<DMSMessage[], DMSMessage[]> handler)

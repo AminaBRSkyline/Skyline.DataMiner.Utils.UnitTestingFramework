@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +9,10 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Skyline.DataMiner.Net;
+    using Skyline.DataMiner.Net.Apps.DataMinerObjectModel;
     using Skyline.DataMiner.Net.Messages;
+    using Skyline.DataMiner.Net.Messages.SLDataGateway;
+    using Skyline.DataMiner.Utils.DOM.Builders;
     using Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common;
 
     [TestClass]
@@ -21,22 +24,109 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         private const int ParameterId = 10;
 
         [TestMethod]
-        public void Connection_GetMultipleTimes_ReturnsSameInstance()
+        public void AddSubscription_DoesNotNotifyTwice_WithDuplicateFilter()
         {
             // Arrange
             var dmsMock = new IDmsMock();
+            var elementMock = dmsMock
+                .CreateAgent(1, "DMA 1")
+                .CreateElement(ProtocolPath, id: 11, name: "Element 11");
+            var connection = dmsMock.Connection.Object;
+            var numberOfInvocations = 0;
+            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+
+            connection.OnNewMessage += (sender, args) => numberOfInvocations++;
+            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
+            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
 
             // Act
-            var firstConnection = dmsMock.Connection;
-            var secondConnection = dmsMock.Connection;
+            elementMock.GetStandaloneParameterMock<int?>(ParameterId).UpdateValue(1);
 
             // Assert
-            Assert.IsNotNull(firstConnection);
-            Assert.AreSame(firstConnection, secondConnection);
+            Assert.AreEqual(1, numberOfInvocations);
         }
 
         [TestMethod]
-        public void AddSubscription_ParameterChangesOnMultipleElements_NotifiesOnlyForTrackedElement()
+        public void AddSubscription_NotifiesOnceAsDeleted_WhenTableRowIsDeleted()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
+            var tableMock = elementMock.GetDmsTableMock(100);
+            tableMock.SetRow(new object[] { "row-1", "Value" });
+
+            var connection = dmsMock.Connection.Object;
+            var numberOfInvocations = 0;
+            ParameterTableUpdateEventMessage receivedMessage = null;
+
+            connection.OnNewMessage += (sender, args) =>
+            {
+                if (args.Message is ParameterTableUpdateEventMessage message)
+                {
+                    numberOfInvocations++;
+                    receivedMessage = message;
+                }
+            };
+
+            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
+
+            // Act
+            tableMock.RemoveRows("row-1");
+
+            // Assert
+            Assert.AreEqual(1, numberOfInvocations);
+            Assert.IsNotNull(receivedMessage);
+            Assert.AreEqual(100, receivedMessage.ParameterID);
+            Assert.AreEqual(101, receivedMessage.IndexColumnID);
+            Assert.AreEqual("row-1", receivedMessage.TableIndex);
+            Assert.IsTrue(receivedMessage.IsDeleted);
+            Assert.AreEqual(0, receivedMessage.UpdatedRows.Length);
+            CollectionAssert.AreEqual(new[] { "row-1" }, receivedMessage.DeletedRows);
+        }
+
+        [TestMethod]
+        public void AddSubscription_NotifiesOnceWithTableAndRowInformation_WhenTableRowIsAdded()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
+            var tableMock = elementMock.GetDmsTableMock(100);
+
+            var connection = dmsMock.Connection.Object;
+            var numberOfInvocations = 0;
+            ParameterTableUpdateEventMessage receivedMessage = null;
+
+            connection.OnNewMessage += (sender, args) =>
+            {
+                if (args.Message is ParameterTableUpdateEventMessage message)
+                {
+                    numberOfInvocations++;
+                    receivedMessage = message;
+                }
+            };
+
+            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
+
+            // Act
+            tableMock.SetRow(new object[] { "row-1", "Value" });
+
+            // Assert
+            Assert.AreEqual(1, numberOfInvocations);
+            Assert.IsNotNull(receivedMessage);
+            Assert.AreEqual(100, receivedMessage.ParameterID);
+            Assert.AreEqual(101, receivedMessage.IndexColumnID);
+            Assert.AreEqual("row-1", receivedMessage.TableIndex);
+            Assert.IsFalse(receivedMessage.IsDeleted);
+            Assert.AreEqual(1, receivedMessage.UpdatedRows.Length);
+            Assert.AreEqual(0, receivedMessage.DeletedRows.Length);
+        }
+
+        [TestMethod]
+        public void AddSubscription_NotifiesOnlyForTrackedElement_WithParameterChangesOnMultipleElements()
         {
             // Arrange
             var dmsMock = new IDmsMock();
@@ -90,7 +180,291 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
-        public void RemoveSubscription_AfterRemovingFilter_DoesNotNotify()
+        public void AddSubscription_NotifiesWithColumnAndRowInformation_WhenTableCellChanges()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
+            var tableMock = elementMock.GetDmsTableMock(100);
+            tableMock.SetRow(new object[] { "row-1", "Old value" });
+
+            var connection = dmsMock.Connection.Object;
+            var numberOfInvocations = 0;
+            ParameterTableUpdateEventMessage receivedMessage = null;
+
+            connection.OnNewMessage += (sender, args) =>
+            {
+                if (args.Message is ParameterTableUpdateEventMessage message)
+                {
+                    numberOfInvocations++;
+                    receivedMessage = message;
+                }
+            };
+
+            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
+            connection.Subscribe();
+
+            // Act
+            tableMock.SetCell("row-1", 102, "New value");
+
+            // Assert
+            Assert.AreEqual(1, numberOfInvocations);
+            Assert.IsNotNull(receivedMessage);
+            Assert.AreEqual(1, receivedMessage.DataMinerID);
+            Assert.AreEqual(11, receivedMessage.ElementID);
+            Assert.AreEqual(100, receivedMessage.ParameterID);
+            Assert.AreEqual(101, receivedMessage.IndexColumnID);
+            Assert.AreEqual("row-1", receivedMessage.TableIndex);
+            Assert.AreEqual(1, receivedMessage.UpdatedRows.Length);
+            Assert.AreEqual("row-1", receivedMessage.UpdatedRows[0].ArrayValue[0].StringValue);
+            Assert.AreEqual("New value", receivedMessage.UpdatedRows[0].ArrayValue[1].StringValue);
+        }
+
+        [TestMethod]
+        public void AddSubscription_RaisesTwoNotifications_WithTwoMatchingSubscriptionIds()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
+
+            var connection = dmsMock.Connection.Object;
+            var numberOfInvocations = 0;
+
+            connection.OnNewMessage += (sender, args) =>
+            {
+                if (args.Message is ParameterChangeEventMessage)
+                {
+                    numberOfInvocations++;
+                }
+            };
+
+            var firstFilter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+
+            var secondFilter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+
+            connection.AddSubscription(
+                "FirstSubscription",
+                new SubscriptionFilter[] { firstFilter });
+
+            connection.AddSubscription(
+                "SecondSubscription",
+                new SubscriptionFilter[] { secondFilter });
+
+            // Act
+            elementMock
+                .GetStandaloneParameterMock<int?>(ParameterId)
+                .UpdateValue(1);
+
+            // Assert
+            Assert.AreEqual(2, numberOfInvocations);
+        }
+
+        [TestMethod]
+        public void AddSubscription_ThrowsArgumentNullException_WithNullSubscriptionId()
+        {
+            var connection = new IConnectionMock().Object;
+            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+
+            Assert.ThrowsExactly<ArgumentNullException>(() =>
+                connection.AddSubscription(null, new SubscriptionFilter[] { filter }));
+        }
+
+        [TestMethod]
+        public void ClearSubscriptions_DoesNotNotify_AfterClearingSubscription()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
+            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
+
+            var connection = dmsMock.Connection.Object;
+            var numberOfInvocations = 0;
+
+            connection.OnNewMessage += (sender, args) =>
+            {
+                if (args.Message is ParameterChangeEventMessage)
+                {
+                    numberOfInvocations++;
+                }
+            };
+
+            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
+
+            connection.AddSubscription(
+                SubscriptionId,
+                new SubscriptionFilter[] { filter });
+
+            connection.ClearSubscriptions(SubscriptionId);
+
+            // Act
+            elementMock
+                .GetStandaloneParameterMock<int?>(ParameterId)
+                .UpdateValue(1);
+
+            // Assert
+            Assert.AreEqual(0, numberOfInvocations);
+        }
+
+        [TestMethod]
+        public void ClearSubscriptions_ThrowsArgumentNullException_WithNullSubscriptionId()
+        {
+            var connection = new IConnectionMock().Object;
+
+            Assert.ThrowsExactly<ArgumentNullException>(() => connection.ClearSubscriptions(null));
+        }
+
+        [TestMethod]
+        public void HandleMessages_ReturnsCustomResponse_WithRegisteredCustomMessage()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            connection.RegisterMessageHandler<CustomRequestMessage>(request => new CustomResponseMessage
+            {
+                Value = request.Value.ToUpperInvariant(),
+            });
+
+            // Act
+            var responses = connection.HandleMessages(new DMSMessage[]
+            {
+                new CustomRequestMessage { Value = "request" },
+            });
+
+            // Assert
+            var response = (CustomResponseMessage)responses.Single();
+            Assert.AreEqual("REQUEST", response.Value);
+        }
+
+        [TestMethod]
+        public void HandleMessages_ReturnsNoResponse_WhenCustomHandlerReturnsNull()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            connection.RegisterMessageHandler<CustomRequestMessage>(_ => null);
+
+            // Act
+            var responses = connection.HandleMessages(new DMSMessage[] { new CustomRequestMessage() });
+
+            // Assert
+            Assert.IsEmpty(responses);
+        }
+
+        [TestMethod]
+        public void HandleMessages_ReturnsResponsesInRequestOrder_WithMultipleCustomMessages()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            connection.RegisterMessageHandler<CustomRequestMessage>(request => new CustomResponseMessage { Value = request.Value });
+
+            // Act
+            var responses = connection.HandleMessages(new DMSMessage[]
+            {
+                new CustomRequestMessage { Value = "first" },
+                new CustomRequestMessage { Value = "second" },
+            });
+
+            // Assert
+            Assert.AreEqual("first", ((CustomResponseMessage)responses[0]).Value);
+            Assert.AreEqual("second", ((CustomResponseMessage)responses[1]).Value);
+        }
+
+        [TestMethod]
+        public void HandleMessages_ThrowsArgumentException_WithNullMessageInCollection()
+        {
+            var connection = new IConnectionMock();
+
+            Assert.ThrowsExactly<ArgumentException>(() => connection.HandleMessages(new DMSMessage[] { null }));
+        }
+
+        [TestMethod]
+        public void HandleMessages_ThrowsArgumentNullException_WithNullMessages()
+        {
+            var connection = new IConnectionMock();
+
+            Assert.ThrowsExactly<ArgumentNullException>(() => connection.HandleMessages(null));
+        }
+
+        [TestMethod]
+        public void HandleMessages_UsesCustomAndDomHandlers_OnSameConnection()
+        {
+            // Arrange
+            var definitionId = Guid.NewGuid();
+            var dmsMock = new DmsBuilder()
+                .WithDomDefinition("module", () => new DomDefinitionBuilder()
+                    .WithID(definitionId)
+                    .WithName("Definition")
+                    .Build())
+                .Build();
+            dmsMock.Connection.RegisterMessageHandler<CustomRequestMessage>(request => new CustomResponseMessage
+            {
+                Value = request.Value,
+            });
+
+            // Act
+            var customResponse = dmsMock.Connection.HandleMessages(new DMSMessage[]
+            {
+                new CustomRequestMessage { Value = "custom" },
+            }).Single();
+            var helper = new DomHelper(dmsMock.Connection.HandleMessages, "module");
+            var definition = helper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(definitionId)).Single();
+
+            // Assert
+            Assert.AreEqual("custom", ((CustomResponseMessage)customResponse).Value);
+            Assert.AreEqual(definitionId, definition.ID.Id);
+        }
+
+        [TestMethod]
+        public void NotifySubscriptions_RaisesCustomMessage_WithoutApplyingFilters()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            var expectedMessage = new CustomRequestMessage { Value = "custom" };
+            DMSMessage receivedMessage = null;
+
+            connection.Object.OnNewMessage += (sender, args) => receivedMessage = args.Message;
+            connection.Object.AddSubscription(
+                SubscriptionId,
+                new SubscriptionFilter[] { new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11) });
+
+            // Act
+            connection.NotifySubscriptions(expectedMessage);
+
+            // Assert
+            Assert.AreSame(expectedMessage, receivedMessage);
+        }
+
+        [TestMethod]
+        public void NotifySubscriptions_ThrowsArgumentNullException_WithNullMessage()
+        {
+            var connection = new IConnectionMock();
+
+            Assert.ThrowsExactly<ArgumentNullException>(() => connection.NotifySubscriptions(null));
+        }
+
+        [TestMethod]
+        public void RegisterMessageHandler_ThrowsArgumentNullException_WithNullHandler()
+        {
+            var connection = new IConnectionMock();
+
+            Assert.ThrowsExactly<ArgumentNullException>(() => connection.RegisterMessageHandler<CustomRequestMessage>(null));
+        }
+
+        [TestMethod]
+        public void RegisterMessageHandler_ThrowsInvalidOperationException_WhenMessageTypeIsAlreadyRegistered()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            connection.RegisterMessageHandler<CustomRequestMessage>(_ => new CustomResponseMessage());
+
+            // Act and assert
+            Assert.ThrowsExactly<InvalidOperationException>(() =>
+                connection.RegisterMessageHandler<CustomRequestMessage>(_ => new CustomResponseMessage()));
+        }
+
+        [TestMethod]
+        public void RemoveSubscription_DoesNotNotify_AfterRemovingFilter()
         {
             // Arrange
             var dmsMock = new IDmsMock();
@@ -125,7 +499,15 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
-        public void ReplaceSubscription_AfterReplacingFilter_NotifiesOnlyForNewElement()
+        public void RemoveSubscription_ThrowsArgumentNullException_WithNullSubscriptionId()
+        {
+            var connection = new IConnectionMock().Object;
+
+            Assert.ThrowsExactly<ArgumentNullException>(() => connection.RemoveSubscription(null, Array.Empty<SubscriptionFilter>()));
+        }
+
+        [TestMethod]
+        public void ReplaceSubscription_NotifiesOnlyForNewElement_AfterReplacingFilter()
         {
             // Arrange
             var dmsMock = new IDmsMock();
@@ -175,7 +557,15 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
-        public void ClearSubscriptions_AfterClearingSubscription_DoesNotNotify()
+        public void ReplaceSubscription_ThrowsArgumentNullException_WithNullSubscriptionId()
+        {
+            var connection = new IConnectionMock().Object;
+
+            Assert.ThrowsExactly<ArgumentNullException>(() => connection.ReplaceSubscription(null, Array.Empty<SubscriptionFilter>()));
+        }
+
+        [TestMethod]
+        public void Subscribe_NotifiesForMatchingElement_WithFilter()
         {
             // Arrange
             var dmsMock = new IDmsMock();
@@ -195,11 +585,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
 
-            connection.AddSubscription(
-                SubscriptionId,
+            connection.Subscribe(
                 new SubscriptionFilter[] { filter });
-
-            connection.ClearSubscriptions(SubscriptionId);
 
             // Act
             elementMock
@@ -207,11 +594,50 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                 .UpdateValue(1);
 
             // Assert
-            Assert.AreEqual(0, numberOfInvocations);
+            Assert.AreEqual(1, numberOfInvocations);
         }
 
         [TestMethod]
-        public void Unsubscribe_AfterUnsubscribing_DoesNotNotify()
+        public void Subscribe_ReturnsCreateSubscriptionResponse_WithProvidedFilters()
+        {
+            var connection = new IConnectionMock().Object;
+            var filters = new SubscriptionFilter[]
+            {
+                new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11),
+            };
+
+            var response = connection.Subscribe(filters);
+
+            Assert.IsInstanceOfType<CreateSubscriptionResponseMessage>(response);
+            CollectionAssert.AreEqual(filters, ((CreateSubscriptionResponseMessage)response).Filters);
+        }
+
+        [TestMethod]
+        public void UnregisterMessageHandler_RemovesHandler_WhenMessageTypeIsRegistered()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            connection.RegisterMessageHandler<CustomRequestMessage>(_ => new CustomResponseMessage());
+
+            // Act
+            var removed = connection.UnregisterMessageHandler<CustomRequestMessage>();
+            var responses = connection.HandleMessages(new DMSMessage[] { new CustomRequestMessage() });
+
+            // Assert
+            Assert.IsTrue(removed);
+            Assert.IsEmpty(responses);
+        }
+
+        [TestMethod]
+        public void UnregisterMessageHandler_ReturnsFalse_WithoutRegisteredHandler()
+        {
+            var connection = new IConnectionMock();
+
+            Assert.IsFalse(connection.UnregisterMessageHandler<CustomRequestMessage>());
+        }
+
+        [TestMethod]
+        public void Unsubscribe_DoesNotNotify_AfterUnsubscribing()
         {
             // Arrange
             var dmsMock = new IDmsMock();
@@ -246,199 +672,14 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             Assert.AreEqual(0, numberOfInvocations);
         }
 
-        [TestMethod]
-        public void Subscribe_WithFilter_NotifiesForMatchingElement()
+        private sealed class CustomRequestMessage : DMSMessage
         {
-            // Arrange
-            var dmsMock = new IDmsMock();
-            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
-            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
-
-            var connection = dmsMock.Connection.Object;
-            var numberOfInvocations = 0;
-
-            connection.OnNewMessage += (sender, args) =>
-            {
-                if (args.Message is ParameterChangeEventMessage)
-                {
-                    numberOfInvocations++;
-                }
-            };
-
-            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
-
-            connection.Subscribe(
-                new SubscriptionFilter[] { filter });
-
-            // Act
-            elementMock
-                .GetStandaloneParameterMock<int?>(ParameterId)
-                .UpdateValue(1);
-
-            // Assert
-            Assert.AreEqual(1, numberOfInvocations);
+            public string Value { get; set; }
         }
 
-        [TestMethod]
-        public void AddSubscription_TwoMatchingSubscriptionIds_RaisesTwoNotifications()
+        private sealed class CustomResponseMessage : DMSMessage
         {
-            // Arrange
-            var dmsMock = new IDmsMock();
-            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
-            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
-
-            var connection = dmsMock.Connection.Object;
-            var numberOfInvocations = 0;
-
-            connection.OnNewMessage += (sender, args) =>
-            {
-                if (args.Message is ParameterChangeEventMessage)
-                {
-                    numberOfInvocations++;
-                }
-            };
-
-            var firstFilter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
-
-            var secondFilter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
-
-            connection.AddSubscription(
-                "FirstSubscription",
-                new SubscriptionFilter[] { firstFilter });
-
-            connection.AddSubscription(
-                "SecondSubscription",
-                new SubscriptionFilter[] { secondFilter });
-
-            // Act
-            elementMock
-                .GetStandaloneParameterMock<int?>(ParameterId)
-                .UpdateValue(1);
-
-            // Assert
-            Assert.AreEqual(2, numberOfInvocations);
-        }
-
-        [TestMethod]
-        public void AddSubscription_TableCellChanges_NotifiesWithColumnAndRowInformation()
-        {
-            // Arrange
-            var dmsMock = new IDmsMock();
-            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
-            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
-            var tableMock = elementMock.GetDmsTableMock(100);
-            tableMock.SetRow(new object[] { "row-1", "Old value" });
-
-            var connection = dmsMock.Connection.Object;
-            var numberOfInvocations = 0;
-            ParameterTableUpdateEventMessage receivedMessage = null;
-
-            connection.OnNewMessage += (sender, args) =>
-            {
-                if (args.Message is ParameterTableUpdateEventMessage message)
-                {
-                    numberOfInvocations++;
-                    receivedMessage = message;
-                }
-            };
-
-            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
-            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
-            connection.Subscribe();
-
-            // Act
-            tableMock.SetCell("row-1", 102, "New value");
-
-            // Assert
-            Assert.AreEqual(1, numberOfInvocations);
-            Assert.IsNotNull(receivedMessage);
-            Assert.AreEqual(1, receivedMessage.DataMinerID);
-            Assert.AreEqual(11, receivedMessage.ElementID);
-            Assert.AreEqual(100, receivedMessage.ParameterID);
-            Assert.AreEqual(101, receivedMessage.IndexColumnID);
-            Assert.AreEqual("row-1", receivedMessage.TableIndex);
-            Assert.AreEqual(1, receivedMessage.UpdatedRows.Length);
-            Assert.AreEqual("row-1", receivedMessage.UpdatedRows[0].ArrayValue[0].StringValue);
-            Assert.AreEqual("New value", receivedMessage.UpdatedRows[0].ArrayValue[1].StringValue);
-        }
-
-        [TestMethod]
-        public void AddSubscription_TableRowAdded_NotifiesOnceWithTableAndRowInformation()
-        {
-            // Arrange
-            var dmsMock = new IDmsMock();
-            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
-            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
-            var tableMock = elementMock.GetDmsTableMock(100);
-
-            var connection = dmsMock.Connection.Object;
-            var numberOfInvocations = 0;
-            ParameterTableUpdateEventMessage receivedMessage = null;
-
-            connection.OnNewMessage += (sender, args) =>
-            {
-                if (args.Message is ParameterTableUpdateEventMessage message)
-                {
-                    numberOfInvocations++;
-                    receivedMessage = message;
-                }
-            };
-
-            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
-            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
-
-            // Act
-            tableMock.SetRow(new object[] { "row-1", "Value" });
-
-            // Assert
-            Assert.AreEqual(1, numberOfInvocations);
-            Assert.IsNotNull(receivedMessage);
-            Assert.AreEqual(100, receivedMessage.ParameterID);
-            Assert.AreEqual(101, receivedMessage.IndexColumnID);
-            Assert.AreEqual("row-1", receivedMessage.TableIndex);
-            Assert.IsFalse(receivedMessage.IsDeleted);
-            Assert.AreEqual(1, receivedMessage.UpdatedRows.Length);
-            Assert.AreEqual(0, receivedMessage.DeletedRows.Length);
-        }
-
-        [TestMethod]
-        public void AddSubscription_TableRowDeleted_NotifiesOnceAsDeleted()
-        {
-            // Arrange
-            var dmsMock = new IDmsMock();
-            var dmaMock = dmsMock.CreateAgent(1, "DMA 1");
-            var elementMock = dmaMock.CreateElement(ProtocolPath, id: 11, name: "Element 11");
-            var tableMock = elementMock.GetDmsTableMock(100);
-            tableMock.SetRow(new object[] { "row-1", "Value" });
-
-            var connection = dmsMock.Connection.Object;
-            var numberOfInvocations = 0;
-            ParameterTableUpdateEventMessage receivedMessage = null;
-
-            connection.OnNewMessage += (sender, args) =>
-            {
-                if (args.Message is ParameterTableUpdateEventMessage message)
-                {
-                    numberOfInvocations++;
-                    receivedMessage = message;
-                }
-            };
-
-            var filter = new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), 1, 11);
-            connection.AddSubscription(SubscriptionId, new SubscriptionFilter[] { filter });
-
-            // Act
-            tableMock.RemoveRows("row-1");
-
-            // Assert
-            Assert.AreEqual(1, numberOfInvocations);
-            Assert.IsNotNull(receivedMessage);
-            Assert.AreEqual(100, receivedMessage.ParameterID);
-            Assert.AreEqual(101, receivedMessage.IndexColumnID);
-            Assert.AreEqual("row-1", receivedMessage.TableIndex);
-            Assert.IsTrue(receivedMessage.IsDeleted);
-            Assert.AreEqual(0, receivedMessage.UpdatedRows.Length);
-            CollectionAssert.AreEqual(new[] { "row-1" }, receivedMessage.DeletedRows);
+            public string Value { get; set; }
         }
     }
 }
