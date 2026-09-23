@@ -256,6 +256,10 @@
             }
 
             parametersAndTables = new ParametersAndTables(protocolMock.Definitions);
+            if (protocolMock.ProtocolModel != null)
+            {
+                parametersAndTables.ApplyInitialValues(protocolMock.ProtocolModel);
+            }
 
             foreach (var parameterModel in parametersAndTables.GetParameters())
             {

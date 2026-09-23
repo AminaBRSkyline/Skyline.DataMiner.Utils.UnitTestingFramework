@@ -138,13 +138,13 @@ The old element exposes parameter `100`, while the new element exposes parameter
 Programmatic protocol definitions are useful for focused tests that only need a small part of a protocol.
 
 ```csharp
-var tableBuilder = new TableModelBuilder(200);
-tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
-tableBuilder.AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value");
+var keyColumn = new ColumnDefinition("Key", typeof(string), pid: 201, idx: 0, allowNull: false);
+var valueColumn = new ColumnDefinition("Value", typeof(string), pid: 202, idx: 1);
+var tableSchema = new TableSchema(new[] { keyColumn, valueColumn }, keyColumn);
 
 var dmsMock = new DmsBuilder()
     .WithProtocol("ExampleProtocol", protocol => protocol
-        .AddTableDefinition(200, tableBuilder.Build().Schema))
+        .AddTableDefinition(200, tableSchema))
     .WithDma(1, dma => dma
         .WithElement(
             id: 10,
@@ -244,7 +244,7 @@ dmsMock.Connection.RegisterMessageHandler<CustomRequestMessage>(request =>
         Value = request.Value,
     });
 
-DMSMessage[] responses = dmsMock.Connection.HandleMessages(
+DMSMessage[] responses = dmsMock.Connection.Object.HandleMessages(
     new DMSMessage[] { new CustomRequestMessage { Value = "request" } });
 ```
 
@@ -269,7 +269,7 @@ var dmsMock = new DmsBuilder()
         .Build())
     .Build();
 
-var helper = new DomHelper(dmsMock.Connection.HandleMessages, moduleId);
+var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, moduleId);
 
 DomDefinition definition = helper.DomDefinitions
     .Read(DomDefinitionExposers.Id.Equal(definitionId))
@@ -278,7 +278,7 @@ DomDefinition definition = helper.DomDefinitions
 Assert.AreEqual("Example definition", definition.Name);
 ```
 
-`DomHelper` sends its normal SLNet request messages through `IConnectionMock.HandleMessages`. `DomSystemMock` handles those requests and stores the data in a separate in-memory cache for each module ID. Data from one module is therefore not visible through a helper for another module.
+`DomHelper` sends its normal SLNet request messages through `IConnection.HandleMessages` on `dmsMock.Connection.Object`. `DomSystemMock` handles those requests and stores the data in a separate in-memory cache for each module ID. Data from one module is therefore not visible through a helper for another module.
 
 The following object types support read, create, update, and delete operations:
 

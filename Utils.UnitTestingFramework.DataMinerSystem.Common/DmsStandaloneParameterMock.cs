@@ -27,7 +27,7 @@
         /// <param name="parameterModel">The parameter model that holds the value.</param>
         /// <param name="element">The element this parameter belongs to.</param>
         /// <exception cref="ArgumentNullException"><paramref name="parameterModel"/> is <see langword="null"/>.</exception>
-        public DmsStandaloneParameterMock(IParameterModel parameterModel, IDmsElement element)
+        internal DmsStandaloneParameterMock(IParameterModel parameterModel, IDmsElement element)
         {
             this.ParameterModel = parameterModel ?? throw new ArgumentNullException(nameof(parameterModel));
             this.element = element;

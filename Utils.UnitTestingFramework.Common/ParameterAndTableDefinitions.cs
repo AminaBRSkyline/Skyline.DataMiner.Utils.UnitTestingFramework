@@ -4,25 +4,17 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
 
-    public class ParameterAndTableDefinitions
+    internal class ParameterAndTableDefinitions
     {
         private readonly Dictionary<string, ParameterDefinition> parameterNameToDefinition = new Dictionary<string, ParameterDefinition>();
         private readonly Dictionary<int, ParameterDefinition> parameterIdToDefinition = new Dictionary<int, ParameterDefinition>();
-        private readonly Dictionary<int, object> initialParameterValues = new Dictionary<int, object>();
-
         private readonly Dictionary<int, TableSchema> tablesPerTablePid = new Dictionary<int, TableSchema>();
 
         public ParameterAndTableDefinitions()
         {
-        }
-
-        public ParameterAndTableDefinitions(IProtocolModel protocolModel)
-        {
-            Populate(protocolModel);
         }
 
         public void AddParameterDefinition(ParameterDefinition parameterDefinition)
@@ -91,32 +83,6 @@
             return tableSchema;
         }
 
-        public void Populate(IProtocolModel protocolModel)
-        {
-            if (protocolModel == null)
-            {
-                throw new ArgumentNullException(nameof(protocolModel));
-            }
-
-            var parametersAndTables = ParametersAndTablesBuilder.Build(protocolModel);
-
-            parameterNameToDefinition.Clear();
-            parameterIdToDefinition.Clear();
-            initialParameterValues.Clear();
-            tablesPerTablePid.Clear();
-
-            foreach (var parameter in parametersAndTables.GetParameters())
-            {
-                AddParameterDefinition(parameter.Definition);
-                initialParameterValues[parameter.Definition.Pid] = parameter.Value;
-            }
-
-            foreach (var table in parametersAndTables.GetTables())
-            {
-                AddTableDefinition(table.TableId, table.Schema);
-            }
-        }
-
         internal ICollection<ParameterDefinition> GetParameterDefinitions()
         {
             return parameterIdToDefinition.Values.ToList();
@@ -127,10 +93,5 @@
             return tablesPerTablePid.ToList();
         }
 
-        internal object GetInitialParameterValue(int parameterId)
-        {
-            initialParameterValues.TryGetValue(parameterId, out var value);
-            return value;
-        }
     }
 }

@@ -8,7 +8,7 @@
         {
         }
 
-        public void CreateModelAndAddToDataCollection(ParametersAndTables dataCollection, IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)
+        public void CreateDefinitionAndAddToCollection(ParameterAndTableDefinitions definitions, IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)
         {
         }
     }

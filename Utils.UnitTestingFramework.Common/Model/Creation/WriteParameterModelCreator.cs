@@ -3,7 +3,6 @@
     using System.Collections.Generic;
 
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
 
     internal class WriteParameterModelCreator : ParameterModelCreatorBase
     {
@@ -14,17 +13,17 @@
             this.excludedPids = excludedPids ?? throw new System.ArgumentNullException(nameof(excludedPids));
         }
 
-        protected override void ProcessString(ParametersAndTables dataCollection, IParamsParam parameter)
+        protected override void ProcessString(ParameterAndTableDefinitions definitions, IParamsParam parameter)
         {
-            ProcessAny(dataCollection, parameter);
+            ProcessAny(definitions, parameter);
         }
 
-        protected override void ProcessDouble(ParametersAndTables dataCollection, IParamsParam parameter)
+        protected override void ProcessDouble(ParameterAndTableDefinitions definitions, IParamsParam parameter)
         {
-            ProcessAny(dataCollection, parameter);
+            ProcessAny(definitions, parameter);
         }
 
-        private void ProcessAny(ParametersAndTables dataCollection, IParamsParam parameter)
+        private void ProcessAny(ParameterAndTableDefinitions definitions, IParamsParam parameter)
         {
             int parameterId = (int)parameter.Id.Value.Value;
 
@@ -35,7 +34,7 @@
 
             var parameterDefinition = BuildDefinitionFromProtocolParameter(parameter);
 
-            dataCollection.AddParameter(new ParameterModel(parameterDefinition, null));
+            definitions.AddParameterDefinition(parameterDefinition);
         }
     }
 }

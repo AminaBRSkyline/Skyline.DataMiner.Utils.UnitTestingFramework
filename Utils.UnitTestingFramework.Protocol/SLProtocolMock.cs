@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Utils.UnitTestingFramework.Tests")]
+[assembly: InternalsVisibleTo("Utils.UnitTestingFramework.Protocol.Tests")]
 namespace Skyline.DataMiner.Utils.UnitTestingFramework.Protocol
 {
     using Moq;
@@ -39,7 +40,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Protocol
         {
             var protocolModel = ProtocolModelBuilder.Build(customPathToProtocolXml);
 
-            this.parametersAndTables = ParametersAndTablesBuilder.Build(protocolModel);
+            var definitions = ParameterAndTablesDefinitionsBuilder.Build(protocolModel);
+            this.parametersAndTables = new ParametersAndTables(definitions);
+            this.parametersAndTables.ApplyInitialValues(protocolModel);
 
             this.notifyProtocolHelper = new NotifyProtocolHelper(parametersAndTables);
 

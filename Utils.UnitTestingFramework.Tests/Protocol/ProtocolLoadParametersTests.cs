@@ -53,7 +53,7 @@
 
             // Act & Assert
             Assert.ThrowsExactly<FileNotFoundException>(
-                () => ParametersAndTablesBuilder.Build(missingDirectoryPath));
+                () => ParameterAndTablesDefinitionsBuilder.Build(missingDirectoryPath));
         }
 
         [TestMethod]

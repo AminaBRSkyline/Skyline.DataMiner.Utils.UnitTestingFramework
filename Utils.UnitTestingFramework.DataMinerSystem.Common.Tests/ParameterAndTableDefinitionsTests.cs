@@ -81,9 +81,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
-        public void Constructor_ThrowsArgumentNullException_WithNullProtocolModel()
+        public void Build_ThrowsArgumentNullException_WithNullProtocolModel()
         {
-            Assert.ThrowsExactly<ArgumentNullException>(() => new ParameterAndTableDefinitions(null));
+            Assert.ThrowsExactly<ArgumentNullException>(() => ParameterAndTablesDefinitionsBuilder.Build(protocolModel: null));
         }
 
         [TestMethod]
@@ -108,14 +108,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var definitions = new ParameterAndTableDefinitions();
 
             Assert.ThrowsExactly<ArgumentException>(() => definitions.GetTableDefinition(200));
-        }
-
-        [TestMethod]
-        public void Populate_ThrowsArgumentNullException_WithNullProtocolModel()
-        {
-            var definitions = new ParameterAndTableDefinitions();
-
-            Assert.ThrowsExactly<ArgumentNullException>(() => definitions.Populate(null));
         }
 
         private static TableSchema CreateTableSchema()

@@ -317,6 +317,20 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        public void HandleMessage_ReturnsCustomResponse_WithRegisteredCustomMessage()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            connection.RegisterMessageHandler<CustomRequestMessage>(request => new CustomResponseMessage { Value = request.Value });
+
+            // Act
+            var responses = connection.Object.HandleMessage(new CustomRequestMessage { Value = "request" });
+
+            // Assert
+            Assert.AreEqual("request", ((CustomResponseMessage)responses.Single()).Value);
+        }
+
+        [TestMethod]
         public void HandleMessages_ReturnsCustomResponse_WithRegisteredCustomMessage()
         {
             // Arrange
@@ -327,7 +341,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             });
 
             // Act
-            var responses = connection.HandleMessages(new DMSMessage[]
+            var responses = connection.Object.HandleMessages(new DMSMessage[]
             {
                 new CustomRequestMessage { Value = "request" },
             });
@@ -345,7 +359,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             connection.RegisterMessageHandler<CustomRequestMessage>(_ => null);
 
             // Act
-            var responses = connection.HandleMessages(new DMSMessage[] { new CustomRequestMessage() });
+            var responses = connection.Object.HandleMessages(new DMSMessage[] { new CustomRequestMessage() });
 
             // Assert
             Assert.IsEmpty(responses);
@@ -359,7 +373,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             connection.RegisterMessageHandler<CustomRequestMessage>(request => new CustomResponseMessage { Value = request.Value });
 
             // Act
-            var responses = connection.HandleMessages(new DMSMessage[]
+            var responses = connection.Object.HandleMessages(new DMSMessage[]
             {
                 new CustomRequestMessage { Value = "first" },
                 new CustomRequestMessage { Value = "second" },
@@ -375,7 +389,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             var connection = new IConnectionMock();
 
-            Assert.ThrowsExactly<ArgumentException>(() => connection.HandleMessages(new DMSMessage[] { null }));
+            Assert.ThrowsExactly<ArgumentException>(() => connection.Object.HandleMessages(new DMSMessage[] { null }));
         }
 
         [TestMethod]
@@ -383,7 +397,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             var connection = new IConnectionMock();
 
-            Assert.ThrowsExactly<ArgumentNullException>(() => connection.HandleMessages(null));
+            Assert.ThrowsExactly<ArgumentNullException>(() => connection.Object.HandleMessages(null));
         }
 
         [TestMethod]
@@ -403,16 +417,30 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             });
 
             // Act
-            var customResponse = dmsMock.Connection.HandleMessages(new DMSMessage[]
+            var customResponse = dmsMock.Connection.Object.HandleMessages(new DMSMessage[]
             {
                 new CustomRequestMessage { Value = "custom" },
             }).Single();
-            var helper = new DomHelper(dmsMock.Connection.HandleMessages, "module");
+            var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "module");
             var definition = helper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(definitionId)).Single();
 
             // Assert
             Assert.AreEqual("custom", ((CustomResponseMessage)customResponse).Value);
             Assert.AreEqual(definitionId, definition.ID.Id);
+        }
+
+        [TestMethod]
+        public void HandleSingleResponseMessage_ReturnsCustomResponse_WithRegisteredCustomMessage()
+        {
+            // Arrange
+            var connection = new IConnectionMock();
+            connection.RegisterMessageHandler<CustomRequestMessage>(request => new CustomResponseMessage { Value = request.Value });
+
+            // Act
+            var response = connection.Object.HandleSingleResponseMessage(new CustomRequestMessage { Value = "request" });
+
+            // Assert
+            Assert.AreEqual("request", ((CustomResponseMessage)response).Value);
         }
 
         [TestMethod]
@@ -621,7 +649,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Act
             var removed = connection.UnregisterMessageHandler<CustomRequestMessage>();
-            var responses = connection.HandleMessages(new DMSMessage[] { new CustomRequestMessage() });
+            var responses = connection.Object.HandleMessages(new DMSMessage[] { new CustomRequestMessage() });
 
             // Assert
             Assert.IsTrue(removed);

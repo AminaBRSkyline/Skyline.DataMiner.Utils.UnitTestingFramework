@@ -105,17 +105,22 @@ classDiagram
     class IDmsProtocolMock {
         +Name string
         +ReferencedVersion string
-        +Definitions ParameterAndTableDefinitions
+        ~Definitions ParameterAndTableDefinitions
         +AddParameterDefinition(...)
         +AddTableDefinition(...)
     }
 
+    class ParameterAndTablesDefinitionsBuilder {
+        <<internal>>
+        +Build(IProtocolModel) ParameterAndTableDefinitions
+    }
+
     class ParameterAndTableDefinitions {
+        <<internal>>
         +AddParameterDefinition(...)
         +AddTableDefinition(...)
         +GetParameterDefinition(...)
         +GetTableDefinition(...)
-        +Populate(...)
     }
 
     class ParameterDefinition
@@ -127,22 +132,24 @@ classDiagram
     }
 
     class ParametersAndTables {
+        <<internal>>
         +ParametersAndTables(definitions)
         +GetParameter(...)
         +GetTable(...)
     }
 
     class IParameterModel {
-        <<interface>>
+        <<internal interface>>
         +Changed
     }
 
     class ITableModel {
-        <<interface>>
+        <<internal interface>>
         +RowChanged
     }
 
     class ParameterModel {
+        <<internal>>
         +Update(...)
     }
 
@@ -168,6 +175,7 @@ classDiagram
     }
 
     IDmsProtocolMockBuilder ..> IDmsProtocolMock : builds
+    ParameterAndTablesDefinitionsBuilder ..> ParameterAndTableDefinitions : builds from protocol XML
     IDmsProtocolMock *-- ParameterAndTableDefinitions : Definitions
     ParameterAndTableDefinitions o-- ParameterDefinition : parameter definitions
     ParameterAndTableDefinitions o-- TableSchema : table definitions
@@ -200,9 +208,9 @@ classDiagram
 
     class IConnectionMock {
         +NotifySubscriptions(DMSMessage)
-        +HandleMessages(DMSMessage[])
         +RegisterMessageHandler(...)
         +UnregisterMessageHandler(...)
+        -HandleMessages(DMSMessage[])
         ~SetMessageHandler(...)
         ~NotifySubscriptions(parameterMessage)
         ~NotifySubscriptions(tableMessage)

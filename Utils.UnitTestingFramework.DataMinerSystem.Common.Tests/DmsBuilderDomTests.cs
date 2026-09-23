@@ -25,7 +25,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                 .WithDomDefinition(moduleId: "module", createDefinition: () => CreateDefinition(firstDefinitionId, "First"))
                 .WithDomDefinition(moduleId: "module", createDefinition: () => CreateDefinition(secondDefinitionId, "Second"))
                 .Build();
-            var helper = new DomHelper(dmsMock.Connection.HandleMessages, "module");
+            var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "module");
 
             // Assert
             Assert.AreEqual(firstDefinitionId, helper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(firstDefinitionId)).Single().ID.Id);
@@ -44,8 +44,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                 .WithDomDefinition(moduleId: "first-module", createDefinition: () => CreateDefinition(firstDefinitionId, "First definition"))
                 .WithDomDefinition(moduleId: "second-module", createDefinition: () => CreateDefinition(secondDefinitionId, "Second definition"))
                 .Build();
-            var firstHelper = new DomHelper(dmsMock.Connection.HandleMessages, "first-module");
-            var secondHelper = new DomHelper(dmsMock.Connection.HandleMessages, "second-module");
+            var firstHelper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "first-module");
+            var secondHelper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "second-module");
 
             // Assert
             Assert.AreEqual(firstDefinitionId, firstHelper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(firstDefinitionId)).Single().ID.Id);
@@ -78,7 +78,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                     .WithID(instanceId)
                     .Build())
                 .Build();
-            var helper = new DomHelper(dmsMock.Connection.HandleMessages, "complete-module");
+            var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "complete-module");
 
             // Assert
             Assert.AreEqual(definition.ID.Id, helper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(definition.ID.Id)).Single().ID.Id);
@@ -100,7 +100,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                     .WithName("DMS definition")
                     .Build())
                 .Build();
-            var helper = new DomHelper(dmsMock.Connection.HandleMessages, "dms-module");
+            var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "dms-module");
 
             // Assert
             var definition = helper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(definitionId)).Single();

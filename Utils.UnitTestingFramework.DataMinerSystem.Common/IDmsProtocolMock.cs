@@ -39,7 +39,7 @@
             PathToProtocolXml = pathToProtocolXml;
             Name = protocolModel.Protocol.Name?.Value;
             ReferencedVersion = protocolModel.Protocol.Version?.Value;
-            Definitions = new ParameterAndTableDefinitions(protocolModel);
+            Definitions = ParameterAndTablesDefinitionsBuilder.Build(protocolModel);
 
             var typeName = protocolModel.Protocol.Type?.Value?.ToString();
             if (!Enum.TryParse(typeName, true, out ProtocolType protocolType))
@@ -51,7 +51,7 @@
             SetupProtocol();
         }
 
-        public ParameterAndTableDefinitions Definitions { get; }
+        internal ParameterAndTableDefinitions Definitions { get; }
 
         internal IProtocolModel ProtocolModel { get; }
 

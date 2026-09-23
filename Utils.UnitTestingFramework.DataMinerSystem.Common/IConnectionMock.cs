@@ -39,6 +39,12 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 .Callback((string subscriptionId, SubscriptionFilter[] filters) => ReplaceSubscription(subscriptionId, filters));
             Setup(connection => connection.ClearSubscriptions(It.IsAny<string>()))
                 .Callback((string subscriptionId) => ClearSubscriptions(subscriptionId));
+            Setup(connection => connection.HandleMessages(It.IsAny<DMSMessage[]>()))
+                .Returns((DMSMessage[] messages) => HandleMessages(messages));
+            Setup(connection => connection.HandleMessage(It.IsAny<DMSMessage>()))
+                .Returns((DMSMessage message) => HandleMessages(new[] { message }));
+            Setup(connection => connection.HandleSingleResponseMessage(It.IsAny<DMSMessage>()))
+                .Returns((DMSMessage message) => HandleMessages(new[] { message }).SingleOrDefault());
         }
 
         /// <summary>
@@ -71,12 +77,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 filters => filters.Any(filter => Matches(filter, message)) ? message : null);
         }
 
-        /// <summary>
-        /// Sends SLNet request messages to the handler attached to this connection.
-        /// </summary>
-        /// <param name="messages">The messages to send.</param>
-        /// <returns>The response messages.</returns>
-        public DMSMessage[] HandleMessages(DMSMessage[] messages)
+        private DMSMessage[] HandleMessages(DMSMessage[] messages)
         {
             if (messages == null)
             {

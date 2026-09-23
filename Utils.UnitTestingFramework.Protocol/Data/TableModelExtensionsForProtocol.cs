@@ -7,7 +7,7 @@
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Protocol.Constants;
 
-    public static class TableModelExtensionsForProtocol
+    internal static class TableModelExtensionsForProtocol
     {
         /// <summary>
         /// Adds or upatesd the specified row and returns the 1-based row index.

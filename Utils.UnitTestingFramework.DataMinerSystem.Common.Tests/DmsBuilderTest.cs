@@ -121,7 +121,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
             // Assert
             var element = dmsMock.Object.GetElement("Complete element");
-            var helper = new DomHelper(dmsMock.Connection.HandleMessages, "complete-module");
+            var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "complete-module");
 
             Assert.IsTrue(dmsMock.Object.AgentExists(1));
             Assert.IsTrue(dmsMock.Object.ProtocolExists("CompleteProtocol", IDmsProtocolMock.DefaultVersion));

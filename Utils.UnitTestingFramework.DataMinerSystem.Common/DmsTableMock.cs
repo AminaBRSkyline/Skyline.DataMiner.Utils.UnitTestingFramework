@@ -30,7 +30,7 @@
         /// <param name="tableModel">The table model that holds the data.</param>
         /// <param name="element">The element this table belongs to.</param>
         /// <exception cref="ArgumentNullException"><paramref name="tableModel"/> is <see langword="null"/>.</exception>
-        public DmsTableMock(ITableModel tableModel, IDmsElement element)
+        internal DmsTableMock(ITableModel tableModel, IDmsElement element)
         {
             this.TableModel = tableModel ?? throw new ArgumentNullException(nameof(tableModel));
             this.element = element;

@@ -11,11 +11,35 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
     public class IDmsProtocolMockBuilderTests
     {
         [TestMethod]
+        public void AddParameterDefinition_ThrowsArgumentException_WithDuplicateId()
+        {
+            var builder = new IDmsProtocolMockBuilder("Protocol")
+                .AddParameterDefinition(new ParameterDefinition("First", typeof(double), 100));
+
+            Assert.ThrowsExactly<ArgumentException>(() =>
+                builder.AddParameterDefinition(new ParameterDefinition("Second", typeof(double), 100)));
+        }
+
+        [TestMethod]
         public void AddParameterDefinition_ThrowsArgumentNullException_WithNullDefinition()
         {
             var builder = new IDmsProtocolMockBuilder("Protocol");
 
             Assert.ThrowsExactly<ArgumentNullException>(() => builder.AddParameterDefinition(null));
+        }
+
+        [TestMethod]
+        public void AddTableDefinition_ThrowsArgumentException_WithDuplicateId()
+        {
+            var firstTableBuilder = new TableModelBuilder(200);
+            firstTableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true);
+            var secondTableBuilder = new TableModelBuilder(200);
+            secondTableBuilder.AddColumn(columnPid: 202, columnIdx: 0, isKey: true);
+            var builder = new IDmsProtocolMockBuilder("Protocol")
+                .AddTableDefinition(200, firstTableBuilder.Build().Schema);
+
+            Assert.ThrowsExactly<ArgumentException>(() =>
+                builder.AddTableDefinition(200, secondTableBuilder.Build().Schema));
         }
 
         [TestMethod]

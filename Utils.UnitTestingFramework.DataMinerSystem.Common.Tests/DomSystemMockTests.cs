@@ -94,7 +94,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var dmsMock = new IDmsMock();
-            var helper = new DomHelper(dmsMock.Connection.HandleMessages, ModuleId);
+            var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, ModuleId);
             var definition = CreateDefinition(Guid.NewGuid(), "Definition");
             var instance = new DomInstanceBuilder(definition).WithID(Guid.NewGuid()).Build();
             var notifications = new List<DomInstancesChangedEventMessage>();
@@ -175,7 +175,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         private static DomHelper CreateHelper()
         {
             var dmsMock = new IDmsMock();
-            return new DomHelper(dmsMock.Connection.HandleMessages, ModuleId);
+            return new DomHelper(dmsMock.Connection.Object.HandleMessages, ModuleId);
         }
 
         private static DomDefinition CreateDefinition(Guid id, string name)
