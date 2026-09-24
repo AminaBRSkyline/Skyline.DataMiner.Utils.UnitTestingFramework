@@ -5,7 +5,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Creation;
 
     [TestClass]
     public class IDmsProtocolMockBuilderTests
@@ -31,15 +30,17 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         [TestMethod]
         public void AddTableDefinition_ThrowsArgumentException_WithDuplicateId()
         {
-            var firstTableBuilder = new TableModelBuilder(200);
-            firstTableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true);
-            var secondTableBuilder = new TableModelBuilder(200);
-            secondTableBuilder.AddColumn(columnPid: 202, columnIdx: 0, isKey: true);
+            var firstTableDefinition = new TableDefinitionBuilder()
+                .AddColumn(columnPid: 201, columnIdx: 0, isPrimaryKey: true)
+                .Build();
+            var secondTableDefinition = new TableDefinitionBuilder()
+                .AddColumn(columnPid: 202, columnIdx: 0, isPrimaryKey: true)
+                .Build();
             var builder = new IDmsProtocolMockBuilder("Protocol")
-                .AddTableDefinition(200, firstTableBuilder.Build().Definition);
+                .AddTableDefinition(200, firstTableDefinition);
 
             Assert.ThrowsExactly<ArgumentException>(() =>
-                builder.AddTableDefinition(200, secondTableBuilder.Build().Definition));
+                builder.AddTableDefinition(200, secondTableDefinition));
         }
 
         [TestMethod]
@@ -55,9 +56,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var parameterDefinition = new ParameterDefinition("Parameter", typeof(double), 100);
-            var tableBuilder = new TableModelBuilder(200);
-            tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
-            var tableDefinition = tableBuilder.Build().Definition;
+            var tableDefinition = new TableDefinitionBuilder()
+                .AddColumn(columnPid: 201, columnIdx: 0, isPrimaryKey: true, columnName: "Key")
+                .Build();
 
             // Act
             var protocol = new IDmsProtocolMockBuilder("Protocol")

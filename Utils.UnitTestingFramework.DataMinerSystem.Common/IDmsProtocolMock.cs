@@ -35,7 +35,6 @@
                 throw new ArgumentNullException(nameof(protocolModel));
             }
 
-            ProtocolModel = protocolModel;
             PathToProtocolXml = pathToProtocolXml;
             Name = protocolModel.Protocol.Name?.Value;
             ReferencedVersion = protocolModel.Protocol.Version?.Value;
@@ -52,8 +51,6 @@
         }
 
         internal ParameterAndTableDefinitions Definitions { get; }
-
-        internal IProtocolModel ProtocolModel { get; }
 
         internal string PathToProtocolXml { get; }
 

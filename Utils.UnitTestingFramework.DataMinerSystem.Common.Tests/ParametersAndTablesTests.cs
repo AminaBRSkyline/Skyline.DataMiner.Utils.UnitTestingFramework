@@ -26,6 +26,18 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         }
 
         [TestMethod]
+        public void Constructor_UsesDefaultValue_FromStandaloneParameterDefinition()
+        {
+            var definitions = new ParameterAndTableDefinitions();
+            var definition = new StandaloneParameterDefinition("Parameter", typeof(string), 100, "Initial value");
+            definitions.AddParameterDefinition(definition);
+
+            var parametersAndTables = new ParametersAndTables(definitions);
+
+            Assert.AreEqual("Initial value", parametersAndTables.GetParameter(100).Value);
+        }
+
+        [TestMethod]
         public void Constructor_CreatesTableModels_FromDefinitions()
         {
             var definitions = new ParameterAndTableDefinitions();

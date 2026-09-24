@@ -8,7 +8,6 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
     using Skyline.DataMiner.Net.Messages.SLDataGateway;
     using Skyline.DataMiner.Utils.DOM.Builders;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Creation;
 
     [TestClass]
     public class DmsBuilderTests
@@ -49,7 +48,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                     .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
                         .FillTable(tableId: 900, rows: [row])
                         .FillTable(tableId: 900,
-                            row => row.SetPrimaryKey("two").SetValueByIdx(2, "two-desc"),
+                            row => row.SetValueByIdx(new[] { 0, 2 }, new object[] { "two", "two-desc" }),
                             row => row.SetPrimaryKey("three").SetValueByIdx(2, "three-desc"))))
                 .Build();
 
@@ -96,10 +95,10 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var parameterDefinition = new ParameterDefinition("Standalone", typeof(int), 100);
-            var tableBuilder = new TableModelBuilder(200);
-            tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
-            tableBuilder.AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value");
-            var tableDefinition = tableBuilder.Build().Definition;
+            var tableDefinition = new TableDefinitionBuilder()
+                .AddColumn(columnPid: 201, columnIdx: 0, isPrimaryKey: true, columnName: "Key")
+                .AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value")
+                .Build();
             var row = new object[] { "row-1", "value-1" };
             var domDefinitionId = Guid.NewGuid();
 
@@ -172,10 +171,10 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         {
             // Arrange
             var parameterDefinition = new ParameterDefinition("Standalone", typeof(double), 100);
-            var tableBuilder = new TableModelBuilder(200);
-            tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
-            tableBuilder.AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value");
-            var tableDefinition = tableBuilder.Build().Definition;
+            var tableDefinition = new TableDefinitionBuilder()
+                .AddColumn(columnPid: 201, columnIdx: 0, isPrimaryKey: true, columnName: "Key")
+                .AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value")
+                .Build();
 
             // Act
             var dmsMock = new DmsBuilder()
