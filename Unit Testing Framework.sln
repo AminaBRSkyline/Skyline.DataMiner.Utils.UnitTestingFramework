@@ -7,6 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utils.UnitTestingFramework.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{585BEAAA-0D4B-4D39-814C-4DA2959D83FA}"
 	ProjectSection(SolutionItems) = preProject
+		Utils.UnitTestingFramework.DataMinerSystem.Common\CLASS_DIAGRAM.md = Utils.UnitTestingFramework.DataMinerSystem.Common\CLASS_DIAGRAM.md
 		LICENSE = LICENSE
 		README.md = README.md
 	EndProjectSection

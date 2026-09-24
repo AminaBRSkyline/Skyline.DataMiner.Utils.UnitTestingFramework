@@ -7,7 +7,7 @@
     /// <summary>
     /// Table model builder.
     /// </summary>
-    public class TableModelBuilder
+    internal class TableModelBuilder
     {
         private readonly int tableId;
         private readonly List<ColumnDefinition> columns = new List<ColumnDefinition>();

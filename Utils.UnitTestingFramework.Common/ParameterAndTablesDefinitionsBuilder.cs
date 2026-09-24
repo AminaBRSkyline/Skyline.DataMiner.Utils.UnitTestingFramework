@@ -6,9 +6,9 @@
 
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Creation;
 
-    public static class ParametersAndTablesBuilder
+    internal static class ParameterAndTablesDefinitionsBuilder
     {
-        public static ParametersAndTables Build(string customPathToProtocolXml)
+        public static ParameterAndTableDefinitions Build(string customPathToProtocolXml)
         {
             var protocolModel = ProtocolModelBuilder.Build(customPathToProtocolXml);
 
@@ -16,16 +16,16 @@
         }
 
         /// <summary>
-        /// Loads the parameter values of the parameters defined in the protocol.xml file in the cache.
+        /// Creates parameter and table definitions from a protocol model.
         /// </summary>
-        public static ParametersAndTables Build(IProtocolModel protocolModel)
+        public static ParameterAndTableDefinitions Build(IProtocolModel protocolModel)
         {
             if (protocolModel is null)
             {
                 throw new ArgumentNullException(nameof(protocolModel));
             }
 
-            var elementData = new ParametersAndTables();
+            var definitions = new ParameterAndTableDefinitions();
             var excludedPids = new HashSet<int>();
 
             var protocolModelParameterFinder = new ProtocolModelParameterFinder(protocolModel);
@@ -37,15 +37,15 @@
                     var parameterType = parameter.Type.Value.Value;
 
                     var modelCreator = DataModelCreatorFactory.Create(parameterType, excludedPids);
-                    modelCreator.CreateModelAndAddToDataCollection(elementData, parameter, protocolModelParameterFinder);
+                    modelCreator.CreateDefinitionAndAddToCollection(definitions, parameter, protocolModelParameterFinder);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     throw new InvalidOperationException($"An exception occurred while processing protocol parameter '{parameter.Name.Value}' (ID: {(int)parameter.Id.Value.Value}). See inner exception for more details.", ex);
                 }
             }
 
-            return elementData;
+            return definitions;
         }
     }
 }

@@ -6,7 +6,7 @@
 
     public class TableSchema
     {
-        internal TableSchema(IEnumerable<ColumnDefinition> columns, ColumnDefinition primaryKeyColumn)
+        public TableSchema(IEnumerable<ColumnDefinition> columns, ColumnDefinition primaryKeyColumn)
         {
             ColumnDefinitions = columns?.ToList() ?? throw new ArgumentNullException(nameof(columns));
             PrimaryKeyColumn = primaryKeyColumn ?? throw new ArgumentNullException(nameof(primaryKeyColumn));
@@ -36,7 +36,7 @@
             return ColumnDefinitions.FirstOrDefault(columnDefinition => columnDefinition.Pid == pid);
         }
 
-        public RowBuilder CreateRowBuilder()
+        internal RowBuilder CreateRowBuilder()
         {
             return new RowBuilder(this);
         }

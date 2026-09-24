@@ -4,7 +4,7 @@
     using Skyline.DataMiner.CICD.Models.Protocol.Enums;
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
 
-    public abstract class DataModelCreatorBase
+    internal abstract class DataModelCreatorBase
     {
         protected Type GetTypeForDefinition(IParamsParam param)
         {

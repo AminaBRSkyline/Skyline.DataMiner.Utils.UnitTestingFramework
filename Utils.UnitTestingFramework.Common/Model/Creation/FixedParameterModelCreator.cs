@@ -2,15 +2,11 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Text.RegularExpressions;
     using Skyline.DataMiner.CICD.Models.Protocol.Enums;
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
 
     internal class FixedParameterModelCreator : ParameterModelCreatorBase
     {
-        private static readonly Regex HexString = new Regex(@"^(0x[0-9a-fA-F]{2})+$");
-        private static readonly string[] hexStringSeparator = new[] { "0x" };
         private readonly HashSet<int> excludedPids;
 
         public FixedParameterModelCreator(HashSet<int> excludedPids)
@@ -18,7 +14,7 @@
             this.excludedPids = excludedPids ?? throw new ArgumentNullException(nameof(excludedPids));
         }
 
-        protected override void ProcessString(ParametersAndTables dataCollection, IParamsParam parameter)
+        protected override void ProcessString(ParameterAndTableDefinitions definitions, IParamsParam parameter)
         {
             int parameterId = (int)parameter.Id.Value.Value;
 
@@ -35,13 +31,10 @@
 
             var parameterDefinition = BuildDefinitionFromProtocolParameter(parameter);
 
-            string fixedValueString = parameter.Interprete.ValueElement.Value;
-            var parameterModel = new ParameterModel(parameterDefinition, fixedValueString);
-
-            dataCollection.AddParameter(parameterModel);
+            definitions.AddParameterDefinition(parameterDefinition);
         }
 
-        protected override void ProcessDouble(ParametersAndTables dataCollection, IParamsParam parameter)
+        protected override void ProcessDouble(ParameterAndTableDefinitions definitions, IParamsParam parameter)
         {
             int parameterId = (int)parameter.Id.Value.Value;
 
@@ -58,18 +51,7 @@
 
             var parameterDefinition = BuildDefinitionFromProtocolParameter(parameter);
 
-            string fixedValueString = parameter.Interprete.ValueElement.Value;
-            int fixedValueInt = -1;
-
-            if (HexString.IsMatch(fixedValueString))
-            {
-                string[] parts = fixedValueString.Split(hexStringSeparator, StringSplitOptions.RemoveEmptyEntries);
-                fixedValueInt = Int32.Parse(parts[0], System.Globalization.NumberStyles.HexNumber);
-            }
-
-            var parameterModel = new ParameterModel(parameterDefinition, fixedValueInt);
-
-            dataCollection.AddParameter(parameterModel);
+            definitions.AddParameterDefinition(parameterDefinition);
         }
 
         private bool IsTitleParameter(IParamsParam parameter)

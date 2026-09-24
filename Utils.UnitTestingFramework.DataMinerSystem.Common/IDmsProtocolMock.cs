@@ -7,6 +7,7 @@
     using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
 
     /// <summary>
@@ -14,11 +15,17 @@
     /// </summary>
     public class IDmsProtocolMock : Mock<IDmsProtocol>
     {
-        internal IDmsProtocolMock(string name , string version = "1.0.0.1")
+        public const string DefaultVersion = "1.0.0.1";
+
+        public IDmsProtocolMock(string name, string version = DefaultVersion)
         {
+            ValidateProtocolIdentifier(name, nameof(name));
+            ValidateProtocolIdentifier(version, nameof(version));
+
             Name = name;
             ReferencedVersion = version;
             Definitions = new ParameterAndTableDefinitions();
+            SetupProtocol();
         }
 
         internal IDmsProtocolMock(IProtocolModel protocolModel, string pathToProtocolXml = null)
@@ -32,8 +39,7 @@
             PathToProtocolXml = pathToProtocolXml;
             Name = protocolModel.Protocol.Name?.Value;
             ReferencedVersion = protocolModel.Protocol.Version?.Value;
-
-            // TODO convert protocol model to ParametersAndTableDefinitions
+            Definitions = ParameterAndTablesDefinitionsBuilder.Build(protocolModel);
 
             var typeName = protocolModel.Protocol.Type?.Value?.ToString();
             if (!Enum.TryParse(typeName, true, out ProtocolType protocolType))
@@ -42,10 +48,7 @@
             }
 
             Type = protocolType;
-
-            Setup(protocol => protocol.Name).Returns(() => Name);
-            Setup(protocol => protocol.ReferencedVersion).Returns(() => ReferencedVersion);
-            Setup(protocol => protocol.Type).Returns(() => Type);
+            SetupProtocol();
         }
 
         internal ParameterAndTableDefinitions Definitions { get; }
@@ -54,18 +57,40 @@
 
         internal string PathToProtocolXml { get; }
 
-        public string Name { get; set; }
+        public new string Name { get; }
 
-        public string ReferencedVersion { get; set; }
+        public string ReferencedVersion { get; }
 
         public ProtocolType Type { get; set; }
 
-
-        public void AddTable(int tableId, TableSchema tableSchema)
+        public void AddTableDefinition(int tableId, TableSchema tableSchema)
         {
             Definitions.AddTableDefinition(tableId, tableSchema);
         }
 
-        // TODO add method to add parameter definitions
+        public void AddParameterDefinition(ParameterDefinition parameterDefinition)
+        {
+            Definitions.AddParameterDefinition(parameterDefinition);
+        }
+
+        private void SetupProtocol()
+        {
+            Setup(protocol => protocol.Name).Returns(() => Name);
+            Setup(protocol => protocol.ReferencedVersion).Returns(() => ReferencedVersion);
+            Setup(protocol => protocol.Type).Returns(() => Type);
+        }
+
+        private static void ValidateProtocolIdentifier(string value, string parameterName)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(parameterName);
+            }
+
+            if (String.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("The protocol name or version cannot be empty or white space.", parameterName);
+            }
+        }
     }
 }

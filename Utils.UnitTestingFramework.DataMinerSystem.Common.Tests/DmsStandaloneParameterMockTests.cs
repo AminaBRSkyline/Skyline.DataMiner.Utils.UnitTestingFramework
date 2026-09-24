@@ -1,4 +1,4 @@
-﻿namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Tests
+namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Tests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -13,20 +13,14 @@
         private readonly string path = "protocol.xml";
 
         [TestMethod]
-        public void Id_ReturnsParameterId()
+        public void Constructor_ThrowsArgumentNullException_WithNullParameterModel()
         {
-            // Arrange
-            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
-
-            // Act
-            var parameter = mock.Object.GetStandaloneParameter<string>(1001);
-
-            // Assert
-            Assert.AreEqual(1001, parameter.Id);
+            Assert.ThrowsExactly<System.ArgumentNullException>(() =>
+                new DmsStandaloneParameterMock<string>(null, null));
         }
 
         [TestMethod]
-        public void Element_ReturnsOwningElement()
+        public void Element_ReturnsOwningElement_ForRequestedParameter()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -39,7 +33,7 @@
         }
 
         [TestMethod]
-        public void GetValue_DefaultValue_ReturnsProtocolDefault()
+        public void GetValue_ReturnsProtocolDefault_BeforeSet()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -52,21 +46,20 @@
         }
 
         [TestMethod]
-        public void SetValue_ThenGetValue_ReturnsSetStringValue()
+        public void Id_ReturnsParameterId_ForRequestedParameter()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
-            var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             // Act
-            parameter.SetValue("new value");
+            var parameter = mock.Object.GetStandaloneParameter<string>(1001);
 
             // Assert
-            Assert.AreEqual("new value", parameter.GetValue());
+            Assert.AreEqual(1001, parameter.Id);
         }
 
         [TestMethod]
-        public void SetValue_ThenGetValue_ReturnsSetDoubleValue()
+        public void SetValue_PersistsDoubleValue_WithDefaultOverload()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -80,7 +73,7 @@
         }
 
         [TestMethod]
-        public void SetValue_ThenGetValue_ReturnsSetNullableIntValue()
+        public void SetValue_PersistsNullableIntValue_WithDefaultOverload()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -94,7 +87,34 @@
         }
 
         [TestMethod]
-        public void SetValue_WithExpectedChangesOverload_PersistsValue()
+        public void SetValue_PersistsStringValue_WithDefaultOverload()
+        {
+            // Arrange
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
+            var parameter = mock.Object.GetStandaloneParameter<string>(1001);
+
+            // Act
+            parameter.SetValue("new value");
+
+            // Assert
+            Assert.AreEqual("new value", parameter.GetValue());
+        }
+
+        [TestMethod]
+        public void SetValue_PersistsValue_AcrossParameterInstances()
+        {
+            // Arrange
+            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
+
+            // Act
+            mock.Object.GetStandaloneParameter<string>(1001).SetValue("persisted");
+
+            // Assert
+            Assert.AreEqual("persisted", mock.Object.GetStandaloneParameter<string>(1001).GetValue());
+        }
+
+        [TestMethod]
+        public void SetValue_PersistsValue_WithExpectedChangesOverload()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -108,20 +128,47 @@
         }
 
         [TestMethod]
-        public void SetValue_ValueSetOnDifferentInstance_IsPersisted()
+        public void StartValueMonitor_InvokesBothCallbacks_WithDifferentSourceIds()
         {
             // Arrange
-            var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
+            var parameter = new IDmsMock()
+                .CreateAgent(agentId: 0)
+                .CreateElement(path)
+                .Object
+                .GetStandaloneParameter<string>(1001);
+            var firstInvocations = 0;
+            var secondInvocations = 0;
+            parameter.StartValueMonitor("first", change => firstInvocations++, false);
+            parameter.StartValueMonitor("second", change => secondInvocations++, false);
 
             // Act
-            mock.Object.GetStandaloneParameter<string>(1001).SetValue("persisted");
+            parameter.SetValue("changed");
 
             // Assert
-            Assert.AreEqual("persisted", mock.Object.GetStandaloneParameter<string>(1001).GetValue());
+            Assert.AreEqual(1, firstInvocations);
+            Assert.AreEqual(1, secondInvocations);
         }
 
         [TestMethod]
-        public void StartValueMonitor_InvokesCallbackOnChange()
+        public void StartValueMonitor_InvokesCallback_WhenTimestampChangesWithSameValue()
+        {
+            // Arrange
+            var parameterMock = new IDmsMock()
+                .CreateAgent(agentId: 0)
+                .CreateElement(path)
+                .GetStandaloneParameterMock<string>(1001);
+            var numberOfInvocations = 0;
+            parameterMock.Object.StartValueMonitor("source", change => numberOfInvocations++, false);
+
+            // Act
+            parameterMock.UpdateValue(parameterMock.Value, System.DateTime.MinValue);
+
+            // Assert
+            Assert.AreEqual(1, numberOfInvocations);
+        }
+
+        [TestMethod]
+        public void StartValueMonitor_InvokesCallbackOnChange_WithDefaultOverload()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -140,7 +187,7 @@
         }
 
         [TestMethod]
-        public void StartValueMonitor_WithTimeSpanOverload_InvokesCallbackOnChange()
+        public void StartValueMonitor_InvokesCallbackOnChange_WithTimeSpanOverload()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -158,7 +205,55 @@
         }
 
         [TestMethod]
-        public void StopValueMonitor_DoesNotInvokeCallbackAfterStop()
+        public void StartValueMonitor_ReplacesExistingCallback_WithSameSourceId()
+        {
+            // Arrange
+            var parameter = new IDmsMock()
+                .CreateAgent(agentId: 0)
+                .CreateElement(path)
+                .Object
+                .GetStandaloneParameter<string>(1001);
+            var firstInvocations = 0;
+            var secondInvocations = 0;
+            parameter.StartValueMonitor("source", change => firstInvocations++, false);
+            parameter.StartValueMonitor("source", change => secondInvocations++, false);
+
+            // Act
+            parameter.SetValue("changed");
+
+            // Assert
+            Assert.AreEqual(0, firstInvocations);
+            Assert.AreEqual(1, secondInvocations);
+        }
+
+        [TestMethod]
+        public void StartValueMonitor_ThrowsArgumentNullException_WithNullCallback()
+        {
+            var parameter = new IDmsMock()
+                .CreateAgent(agentId: 0)
+                .CreateElement(path)
+                .Object
+                .GetStandaloneParameter<string>(1001);
+
+            Assert.ThrowsExactly<System.ArgumentNullException>(() =>
+                parameter.StartValueMonitor("source", null, false));
+        }
+
+        [TestMethod]
+        public void StartValueMonitor_ThrowsArgumentNullException_WithNullSourceId()
+        {
+            var parameter = new IDmsMock()
+                .CreateAgent(agentId: 0)
+                .CreateElement(path)
+                .Object
+                .GetStandaloneParameter<string>(1001);
+
+            Assert.ThrowsExactly<System.ArgumentNullException>(() =>
+                parameter.StartValueMonitor(null, change => { }, false));
+        }
+
+        [TestMethod]
+        public void StopValueMonitor_DoesNotInvokeCallbackAfterStop_WithDefaultOverload()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -176,7 +271,7 @@
         }
 
         [TestMethod]
-        public void StopValueMonitor_WithTimeSpanOverload_DoesNotInvokeCallbackAfterStop()
+        public void StopValueMonitor_DoesNotInvokeCallbackAfterStop_WithTimeSpanOverload()
         {
             // Arrange
             var mock = new IDmsMock().CreateAgent(agentId: 0).CreateElement(path);
@@ -191,6 +286,30 @@
 
             // Assert
             Assert.IsNull(received);
+        }
+
+        [TestMethod]
+        public void UpdateValue_UpdatesPublicValue_WithNewValue()
+        {
+            var parameterMock = new IDmsMock()
+                .CreateAgent(agentId: 0)
+                .CreateElement(path)
+                .GetStandaloneParameterMock<string>(1001);
+
+            parameterMock.UpdateValue("updated");
+
+            Assert.AreEqual("updated", parameterMock.Value);
+        }
+
+        [TestMethod]
+        public void Value_ReturnsCurrentValue_BeforeUpdate()
+        {
+            var parameterMock = new IDmsMock()
+                .CreateAgent(agentId: 0)
+                .CreateElement(path)
+                .GetStandaloneParameterMock<double?>(1000);
+
+            Assert.AreEqual(10.0, parameterMock.Value);
         }
     }
 }

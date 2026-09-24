@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,38 +8,69 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
+    using Skyline.DataMiner.Net.Apps.DataMinerObjectModel;
+    using Skyline.DataMiner.Net.Messages.SLDataGateway;
+    using Skyline.DataMiner.Utils.DOM.Builders;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Creation;
 
     [TestClass]
     public class DmsBuilderTests
     {
         private const string ProtocolName = "UnitTestingFrameworkUseCases";
 
+        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_WithViewAndDma_CreatesBothInSameDms()
+        public void Build_AddsProtocolToDms_WithProtocolXml()
         {
             // Act
             var dmsMock = new DmsBuilder()
-                .WithView(viewId: 55)
-                .WithDma(id: 1)
+                .WithProtocol("protocol.xml")
                 .Build();
 
             // Assert
-            Assert.IsTrue(dmsMock.Object.ViewExists(55));
-            Assert.IsTrue(dmsMock.Object.AgentExists(1));
-            Assert.AreSame(dmsMock.Object, dmsMock.Object.GetView(55).Dms);
-            Assert.AreSame(dmsMock.Object, dmsMock.Object.GetAgent(1).Dms);
+            var protocol = dmsMock.Object.GetProtocols().Single();
+            Assert.AreEqual(ProtocolName, protocol.Name);
+            Assert.AreEqual("1.0.0.1", protocol.ReferencedVersion);
+            Assert.AreEqual(ProtocolType.Virtual, protocol.Type);
+            Assert.IsTrue(dmsMock.Object.ProtocolExists(ProtocolName, "1.0.0.1"));
+            Assert.AreSame(protocol, dmsMock.Object.GetProtocol(ProtocolName, "1.0.0.1"));
+            Assert.IsFalse(dmsMock.Object.ProtocolExists(ProtocolName, "2.0.0.0"));
+            Assert.ThrowsExactly<ProtocolNotFoundException>(() => dmsMock.Object.GetProtocol(ProtocolName, "2.0.0.0"));
         }
 
         [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_WithElementsAndView_ConnectsElementsToDmaAndView()
+        public void Build_AddsRowsToElementTable_WithTable()
+        {
+            // Arrange
+            var row = new object[] { "one", "one-desc", 3.0, 4.0, 5.0 };
+
+            // Act
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("protocol.xml")
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .WithTable(tableId: 900, rows: [row])))
+                .Build();
+
+            // Assert
+            var table = dmsMock.Object.GetAgent(1).GetElement("Element 33").GetTable(900);
+            Assert.IsTrue(table.RowExists("one"));
+            CollectionAssert.AreEqual(row, table.GetRow("one"));
+        }
+
+        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
+        [TestMethod]
+        public void Build_ConnectsElementsToDmaAndView_WithElementsAndView()
         {
             // Act
             var dmsMock = new DmsBuilder()
                 .WithProtocol("protocol.xml")
                 .WithView(viewId: 55)
-                .WithDma(id: 1, configure: dma => dma
-                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.UnderView(viewId: 55))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .UnderView(viewId: 55))
                     .WithElement(id: 44, name: "Element 44", protocolName: ProtocolName))
                 .Build();
 
@@ -59,64 +90,216 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             Assert.AreSame(firstElement.Protocol, dmsMock.Object.GetProtocols().Single());
         }
 
-        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_WithTable_AddsRowsToElementTable()
+        public void Build_CreatesDmaElementParametersTablesViewsAndDom_WithCompleteConfiguration()
         {
             // Arrange
-            var row = new object[] { "one", "one-desc", 3.0, 4.0, 5.0 };
+            var parameterDefinition = new ParameterDefinition("Standalone", typeof(int), 100);
+            var tableBuilder = new TableModelBuilder(200);
+            tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
+            tableBuilder.AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value");
+            var tableSchema = tableBuilder.Build().Schema;
+            var row = new object[] { "row-1", "value-1" };
+            var domDefinitionId = Guid.NewGuid();
 
             // Act
             var dmsMock = new DmsBuilder()
-                .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.WithTable(tableId: 900, rows: new object[][] { row })))
+                .WithProtocol(name: "CompleteProtocol", configure: protocol => protocol
+                    .AddParameterDefinition(parameterDefinition)
+                    .AddTableDefinition(tableId: 200, tableSchema: tableSchema))
+                .WithView(viewId: 55, name: "Complete view")
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 10, name: "Complete element", protocolName: "CompleteProtocol", configure: element => element
+                        .UnderView(viewId: 55)
+                        .WithParameter<int?>(parameterId: 100, value: 7)
+                        .WithTable(tableId: 200, rows: [row])))
+                .WithDomDefinition(moduleId: "complete-module", createDefinition: () => new DomDefinitionBuilder()
+                    .WithID(domDefinitionId)
+                    .WithName("DOM definition")
+                    .Build())
                 .Build();
 
             // Assert
-            var table = dmsMock.Object.GetAgent(1).GetElement("Element 33").GetTable(900);
-            Assert.IsTrue(table.RowExists("one"));
-            CollectionAssert.AreEqual(row, table.GetRow("one"));
+            var element = dmsMock.Object.GetElement("Complete element");
+            var helper = new DomHelper(dmsMock.Connection.Object.HandleMessages, "complete-module");
+
+            Assert.IsTrue(dmsMock.Object.AgentExists(1));
+            Assert.IsTrue(dmsMock.Object.ProtocolExists("CompleteProtocol", IDmsProtocolMock.DefaultVersion));
+            Assert.AreEqual((int?)7, element.GetStandaloneParameter<int?>(100).GetValue());
+            CollectionAssert.AreEqual(row, element.GetTable(200).GetRow("row-1"));
+            Assert.AreSame(element, dmsMock.Object.GetView(55).Elements.Single());
+            Assert.AreEqual(domDefinitionId, helper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(domDefinitionId)).Single().ID.Id);
+        }
+        [TestMethod]
+        public void Build_CreatesElementsWithMatchingDefinitions_WithTwoManualProtocolVersions()
+        {
+            // Arrange
+            const string protocolName = "VersionedProtocol";
+            const string firstVersion = "1.0.0.1";
+            const string secondVersion = "2.0.0.0";
+            var firstParameter = new ParameterDefinition("First version parameter", typeof(double), 100);
+            var secondParameter = new ParameterDefinition("Second version parameter", typeof(double), 200);
+
+            // Act
+            var dmsMock = new DmsBuilder()
+                .WithProtocol(name: protocolName, configure: protocol => protocol
+                    .AddParameterDefinition(firstParameter), version: firstVersion)
+                .WithProtocol(name: protocolName, configure: protocol => protocol
+                    .AddParameterDefinition(secondParameter), version: secondVersion)
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 10, name: "First version element", protocolName: protocolName, protocolVersion: firstVersion)
+                    .WithElement(id: 20, name: "Second version element", protocolName: protocolName, protocolVersion: secondVersion))
+                .Build();
+
+            // Assert
+            var firstProtocol = dmsMock.Object.GetProtocol(protocolName, firstVersion);
+            var secondProtocol = dmsMock.Object.GetProtocol(protocolName, secondVersion);
+            var firstElement = dmsMock.Object.GetElement("First version element");
+            var secondElement = dmsMock.Object.GetElement("Second version element");
+
+            Assert.AreNotSame(firstProtocol, secondProtocol);
+            Assert.AreSame(firstProtocol, firstElement.Protocol);
+            Assert.AreSame(secondProtocol, secondElement.Protocol);
+            Assert.AreEqual(100, firstElement.GetStandaloneParameter<double?>(100).Id);
+            Assert.AreEqual(200, secondElement.GetStandaloneParameter<double?>(200).Id);
+            Assert.ThrowsExactly<ArgumentException>(() => firstElement.GetStandaloneParameter<double?>(200));
+            Assert.ThrowsExactly<ArgumentException>(() => secondElement.GetStandaloneParameter<double?>(100));
+        }
+
+        [TestMethod]
+        public void Build_CreatesElementWithoutProtocolXml_WithManualProtocolDefinitions()
+        {
+            // Arrange
+            var parameterDefinition = new ParameterDefinition("Standalone", typeof(double), 100);
+            var tableBuilder = new TableModelBuilder(200);
+            tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
+            tableBuilder.AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value");
+            var tableSchema = tableBuilder.Build().Schema;
+
+            // Act
+            var dmsMock = new DmsBuilder()
+                .WithProtocol(name: "CustomProtocol", configure: protocol => protocol
+                    .AddParameterDefinition(parameterDefinition)
+                    .AddTableDefinition(tableId: 200, tableSchema: tableSchema))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 10, name: "Element 10", protocolName: "CustomProtocol"))
+                .Build();
+
+            // Assert
+            var protocol = dmsMock.Object.GetProtocol("CustomProtocol", IDmsProtocolMock.DefaultVersion);
+            var element = dmsMock.Object.GetElement("Element 10");
+
+            Assert.AreSame(protocol, element.Protocol);
+            Assert.AreEqual(100, element.GetStandaloneParameter<double?>(100).Id);
+            Assert.AreEqual(200, element.GetTable(200).Id);
+        }
+
+        [TestMethod]
+        public void Build_CreatesViewAndDma_InSameDms()
+        {
+            // Act
+            var dmsMock = new DmsBuilder()
+                .WithView(viewId: 55)
+                .WithDma(id: 1)
+                .Build();
+
+            // Assert
+            Assert.IsTrue(dmsMock.Object.ViewExists(55));
+            Assert.IsTrue(dmsMock.Object.AgentExists(1));
+            Assert.AreSame(dmsMock.Object, dmsMock.Object.GetView(55).Dms);
+            Assert.AreSame(dmsMock.Object, dmsMock.Object.GetAgent(1).Dms);
         }
 
         [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_WithTableNullRows_ThrowsArgumentNullException()
+        public void Build_SetsStandaloneParameter_WithParameter()
+        {
+            // Act
+            var dmsMock = new DmsBuilder()
+                .WithProtocol("protocol.xml")
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .WithParameter<int?>(parameterId: 800, value: 7)))
+                .Build();
+
+            var value = dmsMock.Object.GetElement("Element 33").GetStandaloneParameter<int?>(800).GetValue();
+
+            // Assert
+            Assert.AreEqual((int?)7, value);
+        }
+
+        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
+        [TestMethod]
+        public void Build_ThrowsArgumentException_WithDuplicateProtocol()
+        {
+            var builder = new DmsBuilder()
+                .WithProtocol("protocol.xml")
+                .WithProtocol("protocol.xml");
+
+            Assert.ThrowsExactly<ArgumentException>(() => builder.Build());
+        }
+
+        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
+        [TestMethod]
+        public void Build_ThrowsArgumentNullException_WithNullTableRows()
         {
             // Arrange
             var builder = new DmsBuilder()
                 .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.WithTable(tableId: 900, rows: null)));
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
+                        .WithTable(tableId: 900, rows: null)));
 
             // Act & Assert
             Assert.ThrowsExactly<ArgumentNullException>(() => builder.Build());
         }
 
-        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_WithProtocol_AddsProtocolFromXmlToDms()
+        public void Build_ThrowsFileNotFoundException_WithMissingProtocolXml()
         {
-            // Act
-            var dmsMock = new DmsBuilder().WithProtocol("protocol.xml").Build();
+            // Arrange
+            var builder = new DmsBuilder()
+                .WithProtocol("missing-protocol.xml");
 
-            // Assert
-            var protocol = dmsMock.Object.GetProtocols().Single();
-            Assert.AreEqual(ProtocolName, protocol.Name);
-            Assert.AreEqual("1.0.0.1", protocol.ReferencedVersion);
-            Assert.AreEqual(ProtocolType.Virtual, protocol.Type);
-            Assert.IsTrue(dmsMock.Object.ProtocolExists(ProtocolName, "1.0.0.1"));
-            Assert.AreSame(protocol, dmsMock.Object.GetProtocol(ProtocolName, "1.0.0.1"));
-            Assert.IsFalse(dmsMock.Object.ProtocolExists(ProtocolName, "2.0.0.0"));
-            Assert.ThrowsExactly<ProtocolNotFoundException>(() => dmsMock.Object.GetProtocol(ProtocolName, "2.0.0.0"));
+            // Act & Assert
+            Assert.ThrowsExactly<System.IO.FileNotFoundException>(() => builder.Build());
+        }
+
+        [TestMethod]
+        public void Build_ThrowsInvalidOperationException_WithUnknownProtocol()
+        {
+            // Arrange
+            var builder = new DmsBuilder()
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: "Unknown"));
+
+            // Act & Assert
+            Assert.ThrowsExactly<InvalidOperationException>(() => builder.Build());
         }
 
         [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_WithProtocolVersion_UsesMatchingProtocol()
+        public void Build_ThrowsInvalidOperationException_WithUnknownProtocolVersion()
+        {
+            // Arrange
+            var builder = new DmsBuilder()
+                .WithProtocol("protocol.xml")
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "2.0.0.0"));
+
+            // Act & Assert
+            Assert.ThrowsExactly<InvalidOperationException>(() => builder.Build());
+        }
+
+        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
+        [TestMethod]
+        public void Build_UsesMatchingProtocol_WithProtocolVersion()
         {
             // Act
             var dmsMock = new DmsBuilder()
                 .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "1.0.0.1"))
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "1.0.0.1"))
                 .Build();
 
             // Assert
@@ -125,46 +308,13 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             Assert.AreSame(protocol, element.Protocol);
         }
 
-        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_UnknownProtocolVersion_ThrowsInvalidOperationException()
-        {
-            // Arrange
-            var builder = new DmsBuilder()
-                .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, protocolVersion: "2.0.0.0"));
-
-            // Act & Assert
-            Assert.ThrowsExactly<InvalidOperationException>(() => builder.Build());
-        }
-
-        [TestMethod]
-        public void Build_UnknownProtocol_ThrowsInvalidOperationException()
-        {
-            // Arrange
-            var builder = new DmsBuilder()
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: "Unknown"));
-
-            // Act & Assert
-            Assert.ThrowsExactly<InvalidOperationException>(() => builder.Build());
-        }
-
-        [TestMethod]
-        public void Build_MissingProtocolXml_ThrowsFileNotFoundException()
-        {
-            // Arrange
-            var builder = new DmsBuilder().WithProtocol("missing-protocol.xml");
-
-            // Act & Assert
-            Assert.ThrowsExactly<System.IO.FileNotFoundException>(() => builder.Build());
-        }
-
-        [TestMethod]
-        public void WithDma_ConfigurationRunsOnBuild()
+        public void WithDma_RunsConfiguration_OnBuild()
         {
             // Arrange
             var configured = false;
-            var builder = new DmsBuilder().WithDma(id: 1, configure: dma => configured = true);
+            var builder = new DmsBuilder()
+                .WithDma(id: 1, configure: dma => configured = true);
 
             Assert.IsFalse(configured);
 
@@ -178,18 +328,19 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
         [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void WithElement_ConfigurationRunsOnBuild()
+        public void WithElement_RunsConfiguration_OnBuild()
         {
             // Arrange
             var configured = false;
             var builder = new DmsBuilder()
                 .WithProtocol("protocol.xml")
                 .WithView(viewId: 55)
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element =>
-                {
-                    configured = true;
-                    element.UnderView(viewId: 55);
-                }));
+                .WithDma(id: 1, dma => dma
+                    .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element =>
+                    {
+                        configured = true;
+                        element.UnderView(viewId: 55);
+                    }));
 
             Assert.IsFalse(configured);
 
@@ -201,29 +352,32 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             Assert.AreSame(dmsMock.Object.GetView(55), dmsMock.Object.GetElement("Element 33").Views.Single());
         }
 
-        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_SameProtocolTwice_ThrowsArgumentException()
+        public void WithProtocol_RunsConfiguration_OnBuild()
         {
+            // Arrange
+            var configured = false;
             var builder = new DmsBuilder()
-                .WithProtocol("protocol.xml")
-                .WithProtocol("protocol.xml");
+                .WithProtocol("Protocol", _ => configured = true);
 
-            Assert.ThrowsExactly<ArgumentException>(() => builder.Build());
+            Assert.IsFalse(configured);
+
+            // Act
+            builder.Build();
+
+            // Assert
+            Assert.IsTrue(configured);
         }
 
-        [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_WithParameter_SetsStandaloneParameter()
+        public void WithProtocol_ThrowsArgumentNullException_WithNullConfiguration()
         {
-            var dmsMock = new DmsBuilder()
-                .WithProtocol("protocol.xml")
-                .WithDma(id: 1, configure: dma => dma.WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element.WithParameter<int?>(800, 7)))
-                .Build();
+            // Arrange
+            var builder = new DmsBuilder();
 
-            var value = dmsMock.Object.GetElement("Element 33").GetStandaloneParameter<int?>(800).GetValue();
-
-            Assert.AreEqual((int?)7, value);
+            // Act and assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => builder.WithProtocol("Protocol", null));
         }
+
     }
 }

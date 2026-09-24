@@ -2,15 +2,61 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
 
-    public class ParameterAndTableDefinitions
+    internal class ParameterAndTableDefinitions
     {
         private readonly Dictionary<string, ParameterDefinition> parameterNameToDefinition = new Dictionary<string, ParameterDefinition>();
         private readonly Dictionary<int, ParameterDefinition> parameterIdToDefinition = new Dictionary<int, ParameterDefinition>();
-
         private readonly Dictionary<int, TableSchema> tablesPerTablePid = new Dictionary<int, TableSchema>();
+
+        public ParameterAndTableDefinitions()
+        {
+        }
+
+        public void AddParameterDefinition(ParameterDefinition parameterDefinition)
+        {
+            if (parameterDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(parameterDefinition));
+            }
+
+            if (parameterIdToDefinition.ContainsKey(parameterDefinition.Pid))
+            {
+                throw new ArgumentException($"There is already a parameter with ID '{parameterDefinition.Pid}'", nameof(parameterDefinition));
+            }
+
+            if (parameterNameToDefinition.ContainsKey(parameterDefinition.Name))
+            {
+                throw new ArgumentException($"There is already a parameter with name '{parameterDefinition.Name}'", nameof(parameterDefinition));
+            }
+
+            parameterIdToDefinition.Add(parameterDefinition.Pid, parameterDefinition);
+            parameterNameToDefinition.Add(parameterDefinition.Name, parameterDefinition);
+        }
+
+        public ParameterDefinition GetParameterDefinition(int parameterId)
+        {
+            if (!parameterIdToDefinition.TryGetValue(parameterId, out var definition))
+            {
+                throw new ArgumentException($"There is no parameter with ID '{parameterId}'", nameof(parameterId));
+            }
+
+            return definition;
+        }
+
+        public ParameterDefinition GetParameterDefinition(string parameterName)
+        {
+            if (!parameterNameToDefinition.TryGetValue(parameterName, out var definition))
+            {
+                throw new ArgumentException($"There is no parameter with name '{parameterName}'", nameof(parameterName));
+            }
+
+            return definition;
+        }
 
         public void AddTableDefinition(int tableId, TableSchema tableSchema)
         {
@@ -27,8 +73,25 @@
             tablesPerTablePid.Add(tableId, tableSchema);
         }
 
-        // TODO Add public method to add parameter definition
+        public TableSchema GetTableDefinition(int tableId)
+        {
+            if (!tablesPerTablePid.TryGetValue(tableId, out var tableSchema))
+            {
+                throw new ArgumentException($"There is no table with ID '{tableId}'", nameof(tableId));
+            }
 
-        // TODO add internal methods to get all parameter definitions and get table definitions. So that ParametersAndTables can use this class to build its models.
+            return tableSchema;
+        }
+
+        internal ICollection<ParameterDefinition> GetParameterDefinitions()
+        {
+            return parameterIdToDefinition.Values.ToList();
+        }
+
+        internal ICollection<KeyValuePair<int, TableSchema>> GetTableDefinitions()
+        {
+            return tablesPerTablePid.ToList();
+        }
+
     }
 }

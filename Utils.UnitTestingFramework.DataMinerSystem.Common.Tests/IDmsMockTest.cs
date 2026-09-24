@@ -1,4 +1,4 @@
-﻿namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Tests
+namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Tests
 {
     using System;
     using System.Linq;
@@ -15,141 +15,33 @@
         private readonly string path = "protocol.xml";
 
         [TestMethod]
-        public void Communication_DefaultValue_ReturnsNonNullInstance()
+        public void Connection_ReturnsDifferentInstances_ForDifferentDmsMocks()
         {
             // Arrange
-            var mock = new IDmsMock();
+            var firstDmsMock = new IDmsMock();
+            var secondDmsMock = new IDmsMock();
 
-            // Act
-            var communication = mock.Object.Communication;
-
-            // Assert
-            Assert.IsNotNull(communication);
-        }
-        [TestMethod]
-        public void Communication_CalledTwice_ReturnsSameInstance()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-
-            // Act
-            var firstCommunication = mock.Object.Communication;
-            var secondCommunication = mock.Object.Communication;
-
-            // Assert
-            Assert.AreSame(firstCommunication, secondCommunication);
-
-        }
-        [TestMethod]
-        public void Communication_CustomValue_ReturnsProvidedInstance()
-        {
-            // Arrange
-            var communicationMock = new Mock<ICommunication>();
-            var mock = new IDmsMock();
-            mock.Communication = communicationMock.Object;
-
-            // Act
-            var communication = mock.Object.Communication;
-
-            // Assert
-            Assert.AreSame(communicationMock.Object, communication);
+            // Act and assert
+            Assert.AreNotSame(firstDmsMock.Connection, secondDmsMock.Connection);
         }
 
         [TestMethod]
-        public void ElementPropertyDefinitions_DefaultValue_ReturnsEmptyCollection()
+        public void Connection_ReturnsSameInstance_WhenAccessedMultipleTimes()
         {
             // Arrange
-            var mock = new IDmsMock();
+            var dmsMock = new IDmsMock();
 
             // Act
-            var propertyDefinitions = mock.Object.ElementPropertyDefinitions;
-            var enumeratedDefinitions = propertyDefinitions.Cast<IDmsElementPropertyDefinition>().ToList();
+            var firstConnection = dmsMock.Connection;
+            var secondConnection = dmsMock.Connection;
 
             // Assert
-            Assert.IsNotNull(propertyDefinitions);
-            Assert.AreEqual(0, propertyDefinitions.Count);
-            Assert.AreEqual(0, enumeratedDefinitions.Count);
+            Assert.IsNotNull(firstConnection);
+            Assert.AreSame(firstConnection, secondConnection);
         }
 
         [TestMethod]
-        public void ElementPropertyDefinitions_CustomValue_ReturnsProvidedInstance()
-        {
-            // Arrange
-            var expectedDefinitions = new Mock<IPropertyDefinitionCollection<IDmsElementPropertyDefinition>>().Object;
-            var mock = new IDmsMock();
-            mock.ElementPropertyDefinitions = expectedDefinitions;
-
-            // Act
-            var propertyDefinitions = mock.Object.ElementPropertyDefinitions;
-
-            // Assert
-            Assert.AreSame(expectedDefinitions, propertyDefinitions);
-        }
-
-        [TestMethod]
-        public void ServicePropertyDefinitions_DefaultValue_ReturnsEmptyCollection()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-
-            // Act
-            var propertyDefinitions = mock.Object.ServicePropertyDefinitions;
-            var enumeratedDefinitions = propertyDefinitions.Cast<IDmsServicePropertyDefinition>().ToList();
-
-            // Assert
-            Assert.IsNotNull(propertyDefinitions);
-            Assert.AreEqual(0, propertyDefinitions.Count);
-            Assert.AreEqual(0, enumeratedDefinitions.Count);
-        }
-
-        [TestMethod]
-        public void ServicePropertyDefinitions_CustomValue_ReturnsProvidedInstance()
-        {
-            // Arrange
-            var expectedDefinitions = new Mock<IPropertyDefinitionCollection<IDmsServicePropertyDefinition>>().Object;
-            var mock = new IDmsMock();
-            mock.ServicePropertyDefinitions = expectedDefinitions;
-
-            // Act
-            var propertyDefinitions = mock.Object.ServicePropertyDefinitions;
-
-            // Assert
-            Assert.AreSame(expectedDefinitions, propertyDefinitions);
-        }
-
-        [TestMethod]
-        public void ViewPropertyDefinitions_DefaultValue_ReturnsEmptyCollection()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-
-            // Act
-            var propertyDefinitions = mock.Object.ViewPropertyDefinitions;
-            var enumeratedDefinitions = propertyDefinitions.Cast<IDmsViewPropertyDefinition>().ToList();
-
-            // Assert
-            Assert.IsNotNull(propertyDefinitions);
-            Assert.AreEqual(0, propertyDefinitions.Count);
-            Assert.AreEqual(0, enumeratedDefinitions.Count);
-        }
-
-        [TestMethod]
-        public void ViewPropertyDefinitions_CustomValue_ReturnsProvidedInstance()
-        {
-            // Arrange
-            var expectedDefinitions = new Mock<IPropertyDefinitionCollection<IDmsViewPropertyDefinition>>().Object;
-            var mock = new IDmsMock();
-            mock.ViewPropertyDefinitions = expectedDefinitions;
-
-            // Act
-            var propertyDefinitions = mock.Object.ViewPropertyDefinitions;
-
-            // Assert
-            Assert.AreSame(expectedDefinitions, propertyDefinitions);
-        }
-
-        [TestMethod]
-        public void CreateAgent_CustomValues_AddsAgentToDms()
+        public void CreateAgent_AddsAgentToDms_WithCustomValues()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -164,7 +56,25 @@
         }
 
         [TestMethod]
-        public void CreateView_CustomValues_AddsViewToDms()
+        public void CreateElement_AddsElementToDms_ThroughAgent()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+            var agentMock = mock.CreateAgent(agentId: 1);
+
+            // Act
+            var elementMock = agentMock.CreateElement(path, id: 2, name: "Test Element");
+
+            // Assert
+            Assert.IsTrue(mock.Object.ElementExists(new DmsElementId(1, 2)));
+            Assert.IsTrue(mock.Object.ElementExists("Test Element"));
+            Assert.AreSame(elementMock.Object, mock.Object.GetElement(new DmsElementId(1, 2)));
+            Assert.AreSame(elementMock.Object, mock.Object.GetElement("Test Element"));
+            Assert.AreSame(elementMock.Object, mock.Object.GetElements().Single());
+        }
+
+        [TestMethod]
+        public void CreateView_AddsViewToDms_WithCustomValues()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -184,22 +94,7 @@
         }
 
         [TestMethod]
-        public void ServiceMethods_CreatedService_ReturnServiceFromDms()
-        {
-            // Arrange
-            var dmsMock = new IDmsMock();
-            var serviceMock = dmsMock.CreateAgent(agentId: 1).CreateService(serviceId: 2, name: "Main Service");
-
-            // Act & Assert
-            Assert.IsTrue(dmsMock.Object.ServiceExists(serviceMock.Object.DmsServiceId));
-            Assert.IsTrue(dmsMock.Object.ServiceExists("main service"));
-            Assert.AreSame(serviceMock.Object, dmsMock.Object.GetService(serviceMock.Object.DmsServiceId));
-            Assert.AreSame(serviceMock.Object, dmsMock.Object.GetService("Main Service"));
-            Assert.AreSame(serviceMock.Object, dmsMock.Object.GetServices().Single());
-        }
-
-        [TestMethod]
-        public void CreateView_Configuration_CreatesViewWithGeneratedIdAndParent()
+        public void CreateView_CreatesViewWithGeneratedIdAndParent_WithConfiguration()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -220,7 +115,20 @@
         }
 
         [TestMethod]
-        public void CreateView_NullConfiguration_ThrowsArgumentNullException()
+        public void CreateView_ThrowsArgumentExceptionAndKeepsExistingView_WithDuplicateId()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+            var existingViewMock = mock.CreateView(viewId: 10, name: "Existing View");
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => mock.CreateView(viewId: 10, name: "Other View"));
+            Assert.AreSame(existingViewMock.Object, mock.Object.GetView(10));
+            Assert.AreEqual(1, mock.Object.GetViews().Count);
+        }
+
+        [TestMethod]
+        public void CreateView_ThrowsArgumentNullException_WithNullConfiguration()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -230,34 +138,7 @@
         }
 
         [TestMethod]
-        public void CreateView_NonExistingParent_ThrowsIncorrectDataExceptionAndDoesNotCreateView()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-            var parentReference = mock.Object.GetViewReference(10);
-            var configuration = new ViewConfiguration("Child View", parentReference);
-
-            // Act & Assert
-            Assert.ThrowsExactly<IncorrectDataException>(() => mock.Object.CreateView(configuration));
-            Assert.IsEmpty(mock.Object.GetViews());
-        }
-
-        [TestMethod]
-        public void CreateView_ParentFromDifferentDms_ThrowsIncorrectDataExceptionAndDoesNotCreateView()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-            var otherDmsMock = new IDmsMock();
-            var parentMock = otherDmsMock.CreateView(viewId: -1, name: "Other Root View");
-            var configuration = new ViewConfiguration("Child View", parentMock.Object);
-
-            // Act & Assert
-            Assert.ThrowsExactly<IncorrectDataException>(() => mock.Object.CreateView(configuration));
-            Assert.IsEmpty(mock.Object.GetViews());
-        }
-
-        [TestMethod]
-        public void CreateView_ConfigurationWithExistingName_ThrowsIncorrectDataExceptionAndDoesNotCreateView()
+        public void CreateView_ThrowsIncorrectDataExceptionAndDoesNotCreateView_WithExistingNameInConfiguration()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -272,139 +153,106 @@
         }
 
         [TestMethod]
-        public void ViewExists_NonExistingView_ReturnsFalse()
+        public void CreateView_ThrowsIncorrectDataExceptionAndDoesNotCreateView_WithNonExistingParent()
         {
             // Arrange
             var mock = new IDmsMock();
+            var parentReference = mock.Object.GetViewReference(10);
+            var configuration = new ViewConfiguration("Child View", parentReference);
 
             // Act & Assert
-            Assert.IsFalse(mock.Object.ViewExists(10));
-            Assert.IsFalse(mock.Object.ViewExists("Missing View"));
-        }
-
-        [TestMethod]
-        public void ViewMethods_NameWithDifferentCasing_ReturnExistingView()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-            var viewMock = mock.CreateView(viewId: 10, name: "Main View");
-
-            // Act & Assert
-            Assert.IsTrue(mock.Object.ViewExists("main view"));
-            Assert.AreSame(viewMock.Object, mock.Object.GetView("MAIN VIEW"));
-        }
-
-        [TestMethod]
-        [DataRow(-2)]
-        [DataRow(0)]
-        public void ViewMethods_InvalidId_ThrowArgumentException(int viewId)
-        {
-            // Arrange
-            var mock = new IDmsMock();
-
-            // Act & Assert
-            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.ViewExists(viewId));
-            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.GetView(viewId));
-            Assert.ThrowsExactly<ArgumentException>(() => mock.CreateView(viewId));
-        }
-
-        [TestMethod]
-        public void CreateView_DuplicateId_ThrowsArgumentExceptionAndKeepsExistingView()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-            var existingViewMock = mock.CreateView(viewId: 10, name: "Existing View");
-
-            // Act & Assert
-            Assert.ThrowsExactly<ArgumentException>(() => mock.CreateView(viewId: 10, name: "Other View"));
-            Assert.AreSame(existingViewMock.Object, mock.Object.GetView(10));
-            Assert.AreEqual(1, mock.Object.GetViews().Count);
-        }
-
-        [TestMethod]
-        public void GetView_NonExistingView_ThrowsViewNotFoundException()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-
-            // Act & Assert
-            Assert.ThrowsExactly<ViewNotFoundException>(() => mock.Object.GetView(10));
-            Assert.ThrowsExactly<ViewNotFoundException>(() => mock.Object.GetView("Missing View"));
-        }
-
-        [TestMethod]
-        public void GetViewReference_ExistingView_ReturnsCachedView()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-            var viewMock = mock.CreateView(viewId: 10, name: "Main View");
-
-            // Act
-            var view = mock.Object.GetViewReference(10);
-
-            // Assert
-            Assert.AreSame(viewMock.Object, view);
-        }
-
-        [TestMethod]
-        public void GetViewReference_NonExistingView_ReturnsReferenceWithoutAddingView()
-        {
-            // Arrange
-            var mock = new IDmsMock();
-
-            // Act
-            var view = mock.Object.GetViewReference(10);
-
-            // Assert
-            Assert.AreEqual(10, view.Id);
-            Assert.AreSame(mock.Object, view.Dms);
-            Assert.IsFalse(mock.Object.ViewExists(10));
+            Assert.ThrowsExactly<IncorrectDataException>(() => mock.Object.CreateView(configuration));
             Assert.IsEmpty(mock.Object.GetViews());
         }
 
         [TestMethod]
-        public void ViewMethods_NullName_ThrowArgumentNullException()
+        public void CreateView_ThrowsIncorrectDataExceptionAndDoesNotCreateView_WithParentFromDifferentDms()
         {
             // Arrange
             var mock = new IDmsMock();
+            var otherDmsMock = new IDmsMock();
+            var parentMock = otherDmsMock.CreateView(viewId: -1, name: "Other Root View");
+            var configuration = new ViewConfiguration("Child View", parentMock.Object);
 
             // Act & Assert
-            Assert.ThrowsExactly<ArgumentNullException>(() => mock.Object.ViewExists(null));
-            Assert.ThrowsExactly<ArgumentNullException>(() => mock.Object.GetView(null));
+            Assert.ThrowsExactly<IncorrectDataException>(() => mock.Object.CreateView(configuration));
+            Assert.IsEmpty(mock.Object.GetViews());
         }
 
         [TestMethod]
-        [DataRow("")]
-        [DataRow(" ")]
-        public void ViewMethods_EmptyOrWhiteSpaceName_ThrowArgumentException(string viewName)
+        public void Delete_RemovesElementFromDms_WithExistingElement()
         {
             // Arrange
             var mock = new IDmsMock();
+            var elementMock = mock.CreateAgent(agentId: 1).CreateElement(path, id: 2, name: "Test Element");
 
-            // Act & Assert
-            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.ViewExists(viewName));
-            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.GetView(viewName));
+            // Act
+            elementMock.Object.Delete();
+
+            // Assert
+            Assert.IsFalse(mock.Object.ElementExists(new DmsElementId(1, 2)));
+            Assert.IsFalse(mock.Object.ElementExists("Test Element"));
+            Assert.IsEmpty(mock.Object.GetElements());
+        }
+        [TestMethod]
+        public void Dom_ReturnsDifferentInstances_ForDifferentDmsMocks()
+        {
+            // Arrange
+            var firstDmsMock = new IDmsMock();
+            var secondDmsMock = new IDmsMock();
+
+            // Act and assert
+            Assert.AreNotSame(firstDmsMock.Dom, secondDmsMock.Dom);
         }
 
         [TestMethod]
-        public void GetProtocols_TwoElementsUsingSameProtocol_ReturnsOneProtocol()
+        public void Dom_ReturnsSameInstance_WhenAccessedMultipleTimes()
         {
             // Arrange
             var dmsMock = new IDmsMock();
-            var dmaMock = dmsMock.CreateAgent(agentId: 1);
-            var first = dmaMock.CreateElement(path, id: 1, agentId: 1, name: "First Element");
-            dmaMock.CreateElement(path, id: 2, agentId: 1, name: "Second Element");
 
             // Act
-            var protocols = dmsMock.Object.GetProtocols();
+            var firstDom = dmsMock.Dom;
+            var secondDom = dmsMock.Dom;
 
             // Assert
-            Assert.AreEqual(1, protocols.Count);
-            Assert.AreSame(first.Object.Protocol, protocols.Single());
+            Assert.IsNotNull(firstDom);
+            Assert.AreSame(firstDom, secondDom);
         }
 
         [TestMethod]
-        public void GetAgent_NonExistingId_ThrowsAgentNotFoundException()
+        public void ElementPropertyDefinitions_ReturnsEmptyCollection_ByDefault()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act
+            var propertyDefinitions = mock.Object.ElementPropertyDefinitions;
+            var enumeratedDefinitions = propertyDefinitions.Cast<IDmsElementPropertyDefinition>().ToList();
+
+            // Assert
+            Assert.IsNotNull(propertyDefinitions);
+            Assert.AreEqual(0, propertyDefinitions.Count);
+            Assert.AreEqual(0, enumeratedDefinitions.Count);
+        }
+
+        [TestMethod]
+        public void ElementPropertyDefinitions_ReturnsProvidedInstance_WithCustomValue()
+        {
+            // Arrange
+            var expectedDefinitions = new Mock<IPropertyDefinitionCollection<IDmsElementPropertyDefinition>>().Object;
+            var mock = new IDmsMock();
+            mock.ElementPropertyDefinitions = expectedDefinitions;
+
+            // Act
+            var propertyDefinitions = mock.Object.ElementPropertyDefinitions;
+
+            // Assert
+            Assert.AreSame(expectedDefinitions, propertyDefinitions);
+        }
+
+        [TestMethod]
+        public void GetAgent_ThrowsAgentNotFoundException_WithNonExistingId()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -414,7 +262,7 @@
         }
 
         [TestMethod]
-        public void GetAgentReference_NonExistingId_ReturnsReferenceThatDoesNotExist()
+        public void GetAgentReference_ReturnsNonExistingReference_WithNonExistingId()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -428,25 +276,21 @@
         }
 
         [TestMethod]
-        public void CreateElement_ThroughAgent_AddsElementToDms()
+        [DataRow(0, 1)]
+        [DataRow(1, 0)]
+        [DataRow(-1, 1)]
+        [DataRow(1, -1)]
+        public void GetElement_ThrowsArgumentException_WithInvalidDmsElementId(int agentId, int elementId)
         {
             // Arrange
             var mock = new IDmsMock();
-            var agentMock = mock.CreateAgent(agentId: 1);
 
-            // Act
-            var elementMock = agentMock.CreateElement(path, id: 2, agentId: 1, name: "Test Element");
-
-            // Assert
-            Assert.IsTrue(mock.Object.ElementExists(new DmsElementId(1, 2)));
-            Assert.IsTrue(mock.Object.ElementExists("Test Element"));
-            Assert.AreSame(elementMock.Object, mock.Object.GetElement(new DmsElementId(1, 2)));
-            Assert.AreSame(elementMock.Object, mock.Object.GetElement("Test Element"));
-            Assert.AreSame(elementMock.Object, mock.Object.GetElements().Single());
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.GetElement(new DmsElementId(agentId, elementId)));
         }
 
         [TestMethod]
-        public void GetElement_NonExistingElement_ThrowsElementNotFoundException()
+        public void GetElement_ThrowsElementNotFoundException_WithNonExistingElement()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -457,21 +301,7 @@
         }
 
         [TestMethod]
-        [DataRow(0, 1)]
-        [DataRow(1, 0)]
-        [DataRow(-1, 1)]
-        [DataRow(1, -1)]
-        public void GetElement_InvalidDmsElementId_ThrowsArgumentException(int agentId, int elementId)
-        {
-            // Arrange
-            var mock = new IDmsMock();
-
-            // Act & Assert
-            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.GetElement(new DmsElementId(agentId, elementId)));
-        }
-
-        [TestMethod]
-        public void GetElementReference_NonExistingId_ReturnsReferenceWithProvidedId()
+        public void GetElementReference_ReturnsReferenceWithProvidedId_WithNonExistingId()
         {
             // Arrange
             var mock = new IDmsMock();
@@ -487,19 +317,200 @@
         }
 
         [TestMethod]
-        public void Delete_Element_RemovesElementFromDms()
+        public void GetProtocols_ReturnsOneProtocol_WithTwoElementsUsingSameProtocol()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var dmaMock = dmsMock.CreateAgent(agentId: 1);
+            var first = dmaMock.CreateElement(path, id: 1, name: "First Element");
+            dmaMock.CreateElement(path, id: 2, name: "Second Element");
+
+            // Act
+            var protocols = dmsMock.Object.GetProtocols();
+
+            // Assert
+            Assert.AreEqual(1, protocols.Count);
+            Assert.AreSame(first.Object.Protocol, protocols.Single());
+        }
+
+        [TestMethod]
+        public void GetView_ThrowsViewNotFoundException_WithNonExistingView()
         {
             // Arrange
             var mock = new IDmsMock();
-            var elementMock = mock.CreateAgent(agentId: 1).CreateElement(path, id: 2, agentId: 1, name: "Test Element");
+
+            // Act & Assert
+            Assert.ThrowsExactly<ViewNotFoundException>(() => mock.Object.GetView(10));
+            Assert.ThrowsExactly<ViewNotFoundException>(() => mock.Object.GetView("Missing View"));
+        }
+
+        [TestMethod]
+        public void GetViewReference_ReturnsCachedView_WithExistingView()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+            var viewMock = mock.CreateView(viewId: 10, name: "Main View");
 
             // Act
-            elementMock.Object.Delete();
+            var view = mock.Object.GetViewReference(10);
 
             // Assert
-            Assert.IsFalse(mock.Object.ElementExists(new DmsElementId(1, 2)));
-            Assert.IsFalse(mock.Object.ElementExists("Test Element"));
-            Assert.IsEmpty(mock.Object.GetElements());
+            Assert.AreSame(viewMock.Object, view);
         }
+
+        [TestMethod]
+        public void GetViewReference_ReturnsReferenceWithoutAddingView_WithNonExistingView()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act
+            var view = mock.Object.GetViewReference(10);
+
+            // Assert
+            Assert.AreEqual(10, view.Id);
+            Assert.AreSame(mock.Object, view.Dms);
+            Assert.IsFalse(mock.Object.ViewExists(10));
+            Assert.IsEmpty(mock.Object.GetViews());
+        }
+
+        [TestMethod]
+        public void ServiceMethods_ReturnServiceFromDms_WithCreatedService()
+        {
+            // Arrange
+            var dmsMock = new IDmsMock();
+            var serviceMock = dmsMock.CreateAgent(agentId: 1).CreateService(serviceId: 2, name: "Main Service");
+
+            // Act & Assert
+            Assert.IsTrue(dmsMock.Object.ServiceExists(serviceMock.Object.DmsServiceId));
+            Assert.IsTrue(dmsMock.Object.ServiceExists("main service"));
+            Assert.AreSame(serviceMock.Object, dmsMock.Object.GetService(serviceMock.Object.DmsServiceId));
+            Assert.AreSame(serviceMock.Object, dmsMock.Object.GetService("Main Service"));
+            Assert.AreSame(serviceMock.Object, dmsMock.Object.GetServices().Single());
+        }
+
+        [TestMethod]
+        public void ServicePropertyDefinitions_ReturnsEmptyCollection_ByDefault()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act
+            var propertyDefinitions = mock.Object.ServicePropertyDefinitions;
+            var enumeratedDefinitions = propertyDefinitions.Cast<IDmsServicePropertyDefinition>().ToList();
+
+            // Assert
+            Assert.IsNotNull(propertyDefinitions);
+            Assert.AreEqual(0, propertyDefinitions.Count);
+            Assert.AreEqual(0, enumeratedDefinitions.Count);
+        }
+
+        [TestMethod]
+        public void ServicePropertyDefinitions_ReturnsProvidedInstance_WithCustomValue()
+        {
+            // Arrange
+            var expectedDefinitions = new Mock<IPropertyDefinitionCollection<IDmsServicePropertyDefinition>>().Object;
+            var mock = new IDmsMock();
+            mock.ServicePropertyDefinitions = expectedDefinitions;
+
+            // Act
+            var propertyDefinitions = mock.Object.ServicePropertyDefinitions;
+
+            // Assert
+            Assert.AreSame(expectedDefinitions, propertyDefinitions);
+        }
+
+        [TestMethod]
+        public void ViewExists_ReturnsFalse_WithNonExistingView()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act & Assert
+            Assert.IsFalse(mock.Object.ViewExists(10));
+            Assert.IsFalse(mock.Object.ViewExists("Missing View"));
+        }
+
+        [TestMethod]
+        public void ViewMethods_ReturnExistingView_WithDifferentNameCasing()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+            var viewMock = mock.CreateView(viewId: 10, name: "Main View");
+
+            // Act & Assert
+            Assert.IsTrue(mock.Object.ViewExists("main view"));
+            Assert.AreSame(viewMock.Object, mock.Object.GetView("MAIN VIEW"));
+        }
+
+        [TestMethod]
+        [DataRow("")]
+        [DataRow(" ")]
+        public void ViewMethods_ThrowArgumentException_WithEmptyOrWhiteSpaceName(string viewName)
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.ViewExists(viewName));
+            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.GetView(viewName));
+        }
+
+        [TestMethod]
+        [DataRow(-2)]
+        [DataRow(0)]
+        public void ViewMethods_ThrowArgumentException_WithInvalidId(int viewId)
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.ViewExists(viewId));
+            Assert.ThrowsExactly<ArgumentException>(() => mock.Object.GetView(viewId));
+            Assert.ThrowsExactly<ArgumentException>(() => mock.CreateView(viewId));
+        }
+
+        [TestMethod]
+        public void ViewMethods_ThrowArgumentNullException_WithNullName()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act & Assert
+            Assert.ThrowsExactly<ArgumentNullException>(() => mock.Object.ViewExists(null));
+            Assert.ThrowsExactly<ArgumentNullException>(() => mock.Object.GetView(null));
+        }
+
+        [TestMethod]
+        public void ViewPropertyDefinitions_ReturnsEmptyCollection_ByDefault()
+        {
+            // Arrange
+            var mock = new IDmsMock();
+
+            // Act
+            var propertyDefinitions = mock.Object.ViewPropertyDefinitions;
+            var enumeratedDefinitions = propertyDefinitions.Cast<IDmsViewPropertyDefinition>().ToList();
+
+            // Assert
+            Assert.IsNotNull(propertyDefinitions);
+            Assert.AreEqual(0, propertyDefinitions.Count);
+            Assert.AreEqual(0, enumeratedDefinitions.Count);
+        }
+
+        [TestMethod]
+        public void ViewPropertyDefinitions_ReturnsProvidedInstance_WithCustomValue()
+        {
+            // Arrange
+            var expectedDefinitions = new Mock<IPropertyDefinitionCollection<IDmsViewPropertyDefinition>>().Object;
+            var mock = new IDmsMock();
+            mock.ViewPropertyDefinitions = expectedDefinitions;
+
+            // Act
+            var propertyDefinitions = mock.Object.ViewPropertyDefinitions;
+
+            // Assert
+            Assert.AreSame(expectedDefinitions, propertyDefinitions);
+        }
+
     }
 }

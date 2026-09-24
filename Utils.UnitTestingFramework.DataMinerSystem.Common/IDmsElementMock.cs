@@ -10,11 +10,13 @@
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Selectors;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Monitors;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Templates;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
-    using Skyline.DataMiner.CICD.Models.Protocol.Read.Interfaces;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
+    using ParameterChangeEventMessage = Skyline.DataMiner.Net.Messages.ParameterChangeEventMessage;
+    using ParameterTableUpdateEventMessage = Skyline.DataMiner.Net.Messages.ParameterTableUpdateEventMessage;
+    using ParameterValue = Skyline.DataMiner.Net.Messages.ParameterValue;
 
     /// <summary>
     /// A pre-arranged mock of <see cref="IDmsElement"/>.
@@ -35,7 +37,6 @@
         private ElementState state = ElementState.Active;
         private readonly int agentId;
         private readonly int id;
-        private readonly string pathToProtocolXml;
         private readonly Dictionary<string, Action<ElementAlarmlevelChange>> alarmLevelMonitors = new Dictionary<string, Action<ElementAlarmlevelChange>>();
         private readonly Dictionary<string, Action<ElementNameChange>> nameMonitors = new Dictionary<string, Action<ElementNameChange>>();
         private readonly Dictionary<string, Action<ElementStateChange>> stateMonitors = new Dictionary<string, Action<ElementStateChange>>();
@@ -203,6 +204,8 @@
         /// <returns>The table.</returns>
         public DmsTableMock GetDmsTableMock(int tableId)
         {
+            GetTableObject(tableId);
+
             return tableMocks[tableId];
         }
 
@@ -235,28 +238,41 @@
         /// <summary>
         /// Initializes a new instance of the <see cref="IDmsElementMock"/> class.
         /// </summary>
-        /// <param name="pathToProtocolXml">The path to the protocol.xml file.</param>
+        /// <param name="protocolName">The protocol name.</param>
+        /// <param name="protocolVersion">The protocol version.</param>
         /// <param name="id">The element ID.</param>
         /// <param name="agentId">The DataMiner Agent ID.</param>
         /// <param name="name">The element name.</param>
-        internal IDmsElementMock(Cache cache, string pathToProtocolXml, int id = 0, int agentId = 0, string name = "Element", IProtocolModel protocolModel = null)
+        internal IDmsElementMock(Cache cache, string protocolName, string protocolVersion = IDmsProtocolMock.DefaultVersion, int id = 0, int agentId = 0, string name = "Element")
         {
             this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            this.pathToProtocolXml = pathToProtocolXml;
             this.id = id;
             this.agentId = agentId;
-            protocolModel = protocolModel ?? ProtocolModelBuilder.Build(pathToProtocolXml);
-            parametersAndTables = ParametersAndTablesBuilder.Build(protocolModel); // TODO get ParameterAndTableDefinitions from IDmsProtocolMock in Cache and initialize ParametersAndTables from that 
 
-            var protocolMock = cache.GetProtocol(protocolModel.Protocol.Name.Value, protocolModel.Protocol.Version.Value);
+            var protocolMock = cache.GetProtocol(protocolName, protocolVersion);
             if (protocolMock == null)
             {
-                protocolMock = new IDmsProtocolMock(protocolModel, pathToProtocolXml);
-                cache.AddProtocol(protocolMock);
+                throw new ProtocolNotFoundException(protocolName, protocolVersion);
             }
 
-            protocolName = protocolMock.Name;
-            protocolVersion = protocolMock.ReferencedVersion;
+            parametersAndTables = new ParametersAndTables(protocolMock.Definitions);
+            if (protocolMock.ProtocolModel != null)
+            {
+                parametersAndTables.ApplyInitialValues(protocolMock.ProtocolModel);
+            }
+
+            foreach (var parameterModel in parametersAndTables.GetParameters())
+            {
+                parameterModel.Changed += ParameterModel_Changed;
+            }
+
+            foreach (var tableModel in parametersAndTables.GetTables())
+            {
+                tableModel.RowChanged += TableModel_RowChanged;
+            }
+
+            this.protocolName = protocolMock.Name;
+            this.protocolVersion = protocolMock.ReferencedVersion;
 
             Setup(e => e.AdvancedSettings).Returns(() => AdvancedSettings);
 
@@ -367,6 +383,76 @@
             SetupTables();
         }
 
+        private void ParameterModel_Changed(object sender, ParameterModelChangedEventArgs e)
+        {
+            var message = new ParameterChangeEventMessage(agentId, id, e.ParameterDefinition.Pid)
+            {
+                LastChange = e.NewTimestamp,
+                NewValue = ToParameterValue(e.NewValue),
+            };
+
+            cache.GetConnection().NotifySubscriptions(message);
+        }
+
+        private void TableModel_RowChanged(object sender, RowChangedEventArgs e)
+        {
+            if (!(sender is ITableModel tableModel))
+            {
+                return;
+            }
+
+            bool isDeleted = e.ChangeType == RowChangeType.Deleted;
+            var row = isDeleted ? null : tableModel.GetRow(e.PrimaryKey);
+
+            var message = new ParameterTableUpdateEventMessage(agentId, id, tableModel.TableId)
+            {
+                IndexColumnID = tableModel.Schema.PrimaryKeyColumn.Pid,
+                TableIndex = e.PrimaryKey,
+                TableIndexPK = e.PrimaryKey,
+                IsDeleted = isDeleted,
+                LastChange = DateTime.Now,
+                NewValue = ToParameterValue(isDeleted ? new object[0][] : new[] { row }),
+                DeletedRows = isDeleted ? new[] { e.PrimaryKey } : new string[0],
+            };
+
+            cache.GetConnection().NotifySubscriptions(message);
+        }
+
+        private static ParameterValue ToParameterValue(object value)
+        {
+            if (value == null || value is DBNull)
+            {
+                return ParameterValue.Empty;
+            }
+
+            if (value is string stringValue)
+            {
+                return new ParameterValue(stringValue);
+            }
+
+            if (value is int intValue)
+            {
+                return new ParameterValue(intValue);
+            }
+
+            if (value is DateTime dateValue)
+            {
+                return new ParameterValue(dateValue);
+            }
+
+            if (value is Array arrayValue)
+            {
+                return new ParameterValue(arrayValue);
+            }
+
+            if (value is IConvertible)
+            {
+                return new ParameterValue(Convert.ToDouble(value, System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            return new ParameterValue(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture));
+        }
+
         private int ValidateAlarmCount(int value)
         {
             if (value < 0 || value > ActiveAlarmCount)
@@ -395,7 +481,7 @@
                 throw new AgentNotFoundException(agent.Id);
             }
 
-            var duplicate = targetAgentMock.CreateElement(pathToProtocolXml, targetAgentMock.GetNextElementId(), agent.Id, newElementName);
+            var duplicate = targetAgentMock.CreateElement(protocolName, targetAgentMock.GetNextElementId(), newElementName, protocolVersion);
             duplicate.Description = Description;
             duplicate.Type = Type;
             duplicate.AlarmTemplate = AlarmTemplate;
@@ -550,15 +636,15 @@
 
         private IDmsTable GetTableObject(int tableId)
         {
-            if (!tableMocks.TryGetValue(tableId, out var tableMockObject))
+            if (!tableMocks.TryGetValue(tableId, out var tableMock))
             {
                 var tableModel = parametersAndTables.GetTable(tableId);
 
-                tableMockObject = new DmsTableMock(tableModel, Object).Object;
-                tableMocks.Add(tableId, tableMockObject);
+                tableMock = new DmsTableMock(tableModel, Object);
+                tableMocks.Add(tableId, tableMock);
             }
 
-            return (IDmsTable)tableMockObject;
+            return tableMock.Object;
         }
 
         private static IElementConnectionCollection CreateEmptyConnectionCollection()

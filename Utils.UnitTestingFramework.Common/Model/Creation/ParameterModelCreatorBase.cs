@@ -3,15 +3,14 @@
     using System;
     using Skyline.DataMiner.CICD.Models.Protocol.Enums;
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
-    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
 
     internal abstract class ParameterModelCreatorBase : DataModelCreatorBase, IDataModelCreator
     {
-        public void CreateModelAndAddToDataCollection(ParametersAndTables dataCollection, IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)
+        public void CreateDefinitionAndAddToCollection(ParameterAndTableDefinitions definitions, IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)
         {
-            if (dataCollection is null)
+            if (definitions is null)
             {
-                throw new ArgumentNullException(nameof(dataCollection));
+                throw new ArgumentNullException(nameof(definitions));
             }
 
             if (parameter is null)
@@ -29,15 +28,15 @@
             switch (interpreteType)
             {
                 case EnumParamInterpretType.String:
-                    ProcessString(dataCollection, parameter);
+                    ProcessString(definitions, parameter);
                     break;
 
                 case EnumParamInterpretType.Double:
-                    ProcessDouble(dataCollection, parameter);
+                    ProcessDouble(definitions, parameter);
                     break;
 
                 default:
-                    ProcessOtherTypes(dataCollection, parameter);
+                    ProcessOtherTypes(definitions, parameter);
                     break;
             }
         }
@@ -49,15 +48,14 @@
             return new ParameterDefinition(parameter.Name.Value, GetTypeForDefinition(parameter), parameterId, description: parameter.Description?.Value, allowNull: allowNull);
         }
 
-        protected abstract void ProcessString(ParametersAndTables dataCollection, IParamsParam parameter);
+        protected abstract void ProcessString(ParameterAndTableDefinitions definitions, IParamsParam parameter);
 
-        protected abstract void ProcessDouble(ParametersAndTables dataCollection, IParamsParam parameter);
+        protected abstract void ProcessDouble(ParameterAndTableDefinitions definitions, IParamsParam parameter);
 
-        protected virtual void ProcessOtherTypes(ParametersAndTables dataCollection, IParamsParam parameter)
+        protected virtual void ProcessOtherTypes(ParameterAndTableDefinitions definitions, IParamsParam parameter)
         {
             var parameterDefinition = BuildDefinitionFromProtocolParameter(parameter);
-
-            dataCollection.AddParameter(new ParameterModel(parameterDefinition, null));
+            definitions.AddParameterDefinition(parameterDefinition);
         }
     }
 }

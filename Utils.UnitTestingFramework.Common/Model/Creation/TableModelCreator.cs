@@ -5,7 +5,7 @@
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
 
-    public class TableModelCreator : DataModelCreatorBase, IDataModelCreator
+    internal class TableModelCreator : DataModelCreatorBase, IDataModelCreator
     {
         private readonly HashSet<int> excludedPids;
 
@@ -14,8 +14,13 @@
             this.excludedPids = excludedPids ?? throw new ArgumentNullException(nameof(excludedPids));
         }
 
-        public void CreateModelAndAddToDataCollection(ParametersAndTables dataCollection, IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)
+        public void CreateDefinitionAndAddToCollection(ParameterAndTableDefinitions definitions, IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)
         {
+            if (definitions == null)
+            {
+                throw new ArgumentNullException(nameof(definitions));
+            }
+
             var tableModel = CreateTableModelFromArrayOptions(parameter, protocolModelParameterFinder);
 
             if (tableModel == null)
@@ -23,7 +28,7 @@
                 return;
             }
 
-            dataCollection.AddTable(tableModel);
+            definitions.AddTableDefinition(tableModel.TableId, tableModel.Schema);
         }
 
         public ITableModel CreateTableModelFromArrayOptions(IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)
