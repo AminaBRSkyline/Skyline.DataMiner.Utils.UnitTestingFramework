@@ -48,8 +48,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                     .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
                         .FillTable(tableId: 900, rows: [row])
                         .FillTable(tableId: 900,
-                            row => row.SetValueByIdx(new[] { 0, 2 }, new object[] { "two", "two-desc" }),
-                            row => row.SetPrimaryKey("three").SetValueByIdx(2, "three-desc"))))
+                            row => row.SetValueByIdx(new[] { 0, 1 }, new object[] { "two", "two-desc" }),
+                            row => row.SetPrimaryKey("three").SetValueByIdx(1, "three-desc"))))
                 .Build();
 
             // Assert
