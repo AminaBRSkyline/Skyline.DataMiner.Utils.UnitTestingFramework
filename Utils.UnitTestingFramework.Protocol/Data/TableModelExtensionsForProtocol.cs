@@ -28,7 +28,7 @@
 
             tableModel.SetRow(rowToSet, timestamp);
 
-            string key = Convert.ToString(rowToSet[tableModel.Schema.PrimaryKeyColumn.Idx]);
+            string key = Convert.ToString(rowToSet[tableModel.Definition.PrimaryKeyColumn.Idx]);
 
             int oneBasedRowNumber = tableModel.GetRowIndex(key) + 1;
 
@@ -38,14 +38,14 @@
         private static object[] FitRowToCorrectSize(ITableModel tableModel, object[] row)
         {
             object[] rowToSet = row;
-            if (row.Length < tableModel.Schema.ColumnDefinitions.Count)
+            if (row.Length < tableModel.Definition.ColumnDefinitions.Count)
             {
-                rowToSet = new object[tableModel.Schema.ColumnDefinitions.Count];
+                rowToSet = new object[tableModel.Definition.ColumnDefinitions.Count];
                 Array.Copy(row, rowToSet, row.Length);
             }
-            else if (row.Length > tableModel.Schema.ColumnDefinitions.Count)
+            else if (row.Length > tableModel.Definition.ColumnDefinitions.Count)
             {
-                rowToSet = new object[tableModel.Schema.ColumnDefinitions.Count];
+                rowToSet = new object[tableModel.Definition.ColumnDefinitions.Count];
                 Array.Copy(row, rowToSet, rowToSet.Length);
             }
 
@@ -66,7 +66,7 @@
                 throw new ArgumentException($"'{nameof(primaryKey)}' cannot be null or whitespace.", nameof(primaryKey));
             }
 
-            var row = tableModel.Schema.CreateRowBuilder().SetPrimaryKey(primaryKey).Build();
+            var row = tableModel.Definition.CreateRowBuilder().SetPrimaryKey(primaryKey).Build();
 
             return SetRowReturnOneBasedIndex(tableModel, row);
         }
@@ -88,7 +88,7 @@
 
             tableModel.SetRow(rowToSet);
 
-            return (string)rowToSet[tableModel.Schema.PrimaryKeyColumn.Idx];
+            return (string)rowToSet[tableModel.Definition.PrimaryKeyColumn.Idx];
         }
 
         /// <summary>
@@ -104,8 +104,8 @@
                 return tableModel.AddRowReturnKey();
             }
 
-            var row = new object[tableModel.Schema.ColumnDefinitions.Count];
-            row[tableModel.Schema.PrimaryKeyColumn.Idx] = primaryKey;
+            var row = new object[tableModel.Definition.ColumnDefinitions.Count];
+            row[tableModel.Definition.PrimaryKeyColumn.Idx] = primaryKey;
 
             return tableModel.AddRowReturnKey(row);
         }
@@ -124,7 +124,7 @@
                 primaryKey = (Array.ConvertAll(keys, Convert.ToInt32).Max() + 1).ToString();
             }
 
-            var row = tableModel.Schema.CreateRowBuilder().SetPrimaryKey(primaryKey).Build();
+            var row = tableModel.Definition.CreateRowBuilder().SetPrimaryKey(primaryKey).Build();
 
             tableModel.SetRow(row);
 
@@ -214,12 +214,12 @@
                 throw new ArgumentException($"'{nameof(primaryKey)}' cannot be null or whitespace.", nameof(primaryKey));
             }
 
-            if (oneBasedColumnIndex < 1 || oneBasedColumnIndex > tableModel.Schema.ColumnDefinitions.Count)
+            if (oneBasedColumnIndex < 1 || oneBasedColumnIndex > tableModel.Definition.ColumnDefinitions.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(oneBasedColumnIndex), $"'{nameof(oneBasedColumnIndex)}' must be between 1 and the number of columns in the table ({tableModel.Schema.ColumnDefinitions.Count}).");
+                throw new ArgumentOutOfRangeException(nameof(oneBasedColumnIndex), $"'{nameof(oneBasedColumnIndex)}' must be between 1 and the number of columns in the table ({tableModel.Definition.ColumnDefinitions.Count}).");
             }
 
-            var columnDefinition = tableModel.Schema.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1);
+            var columnDefinition = tableModel.Definition.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1);
 
             return tableModel.GetCell(primaryKey, columnDefinition.Pid);
         }
@@ -240,12 +240,12 @@
                 throw new ArgumentNullException(nameof(tableModel));
             }
 
-            if (oneBasedColumnIndex < 1 || oneBasedColumnIndex > tableModel.Schema.ColumnDefinitions.Count)
+            if (oneBasedColumnIndex < 1 || oneBasedColumnIndex > tableModel.Definition.ColumnDefinitions.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(oneBasedColumnIndex), $"'{nameof(oneBasedColumnIndex)}' must be between 1 and the number of columns in the table ({tableModel.Schema.ColumnDefinitions.Count}).");
+                throw new ArgumentOutOfRangeException(nameof(oneBasedColumnIndex), $"'{nameof(oneBasedColumnIndex)}' must be between 1 and the number of columns in the table ({tableModel.Definition.ColumnDefinitions.Count}).");
             }
 
-            var columnDefinition = tableModel.Schema.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1);
+            var columnDefinition = tableModel.Definition.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1);
 
             tableModel.SetCell(primaryKey, columnDefinition.Pid, value, timeInfo);
 
@@ -280,9 +280,9 @@
         {
             var changes = new int[row.Length];
 
-            string primaryKey = Convert.ToString(oldRow[tableModel.Schema.PrimaryKeyColumn.Idx]);
+            string primaryKey = Convert.ToString(oldRow[tableModel.Definition.PrimaryKeyColumn.Idx]);
 
-            foreach (var columnDefinition in tableModel.Schema.ColumnDefinitions)
+            foreach (var columnDefinition in tableModel.Definition.ColumnDefinitions)
             {
                 if (row.Length <= columnDefinition.Idx)
                 {
@@ -290,7 +290,7 @@
                     continue;
                 }
 
-                if (columnDefinition == tableModel.Schema.PrimaryKeyColumn)
+                if (columnDefinition == tableModel.Definition.PrimaryKeyColumn)
                 {
                     changes[columnDefinition.Idx] = 0;
                     continue;
@@ -329,7 +329,7 @@
             var oldRow = tableModel.GetRow(tableModel.GetRowPrimaryKey(rowIndex));
             if (oldRow == null)
             {
-                return new int[tableModel.Schema.ColumnDefinitions.Count];
+                return new int[tableModel.Definition.ColumnDefinitions.Count];
             }
 
             return UpdateCellsAndReturnChanges(tableModel, timestamp, rowToSet, oldRow);
@@ -393,7 +393,7 @@
 
                 foreach (var rowData in rows)
                 {
-                    string primaryKey = (string)rowData[tableModel.Schema.PrimaryKeyColumn.Idx];
+                    string primaryKey = (string)rowData[tableModel.Definition.PrimaryKeyColumn.Idx];
 
                     tableModel.SetRow(rowData, timeInfo);
                 }
@@ -412,7 +412,7 @@
         /// <returns><c>true</c></returns>
         public static void FillArray(this ITableModel tableModel, object[][] columns, DateTime? timeInfo = null, bool useClearAndLeave = false)
         {
-            var newPrimaryKeys = columns[tableModel.Schema.PrimaryKeyColumn.Idx].Select(key => Convert.ToString(key)).ToArray();
+            var newPrimaryKeys = columns[tableModel.Definition.PrimaryKeyColumn.Idx].Select(key => Convert.ToString(key)).ToArray();
 
             tableModel.FillArrayNoDelete(columns, timeInfo, useClearAndLeave);
 
@@ -437,7 +437,7 @@
 
             foreach (var columnIdx in columnIndexes)
             {
-                var columnDefinition = tableModel.Schema.FindColumnDefinitionByIdx((int)columnIdx);
+                var columnDefinition = tableModel.Definition.FindColumnDefinitionByIdx((int)columnIdx);
 
                 if (columnDefinition != null)
                 {
@@ -462,7 +462,7 @@
         /// <returns>An array of objects representing the column's content.</returns>
         public static object[] GetColumnByPid(this ITableModel tableModel, int columnPid)
         {
-            var column = tableModel.Schema.FindColumnDefinitionByPid(columnPid);
+            var column = tableModel.Definition.FindColumnDefinitionByPid(columnPid);
 
             return tableModel.GetAllRows().Values.Select(row => row[column.Idx]).ToArray();        
         }
@@ -477,7 +477,7 @@
         /// <returns><c>true</c> or <see langword="null"/> if the table cache does not contain a model for that table with the specified ID.</returns>
         public static void FillArrayNoDelete(this ITableModel tableModel, object[][] columns, DateTime? timeInfo = null, bool useClearAndLeave = false)
         {
-            var newPrimaryKeys = columns[tableModel.Schema.PrimaryKeyColumn.Idx].Select(key => Convert.ToString(key)).ToArray();
+            var newPrimaryKeys = columns[tableModel.Definition.PrimaryKeyColumn.Idx].Select(key => Convert.ToString(key)).ToArray();
 
             for (int index = 0; index < columns.Length; index++)
             {
@@ -488,7 +488,7 @@
                     columnToSet = ConvertProtocolClearAndleaveToActualValuesForColumn(newPrimaryKeys, columnToSet, tableModel, index);
                 }
 
-                int columnPid = tableModel.Schema.FindColumnDefinitionByIdx(index).Pid;
+                int columnPid = tableModel.Definition.FindColumnDefinitionByIdx(index).Pid;
 
                 for (int i = 0; i < newPrimaryKeys.Length; i++)
                 {
@@ -499,8 +499,8 @@
                     }
                     else
                     {
-                        var emptyRow = new object[tableModel.Schema.ColumnDefinitions.Count];
-                        emptyRow[tableModel.Schema.PrimaryKeyColumn.Idx] = primaryKeyToSet;
+                        var emptyRow = new object[tableModel.Definition.ColumnDefinitions.Count];
+                        emptyRow[tableModel.Definition.PrimaryKeyColumn.Idx] = primaryKeyToSet;
                         emptyRow[index] = columnToSet[i];
 
                         tableModel.SetRow(emptyRow);
@@ -527,7 +527,7 @@
                 throw new ArgumentException("There should be as many primary keys as values or instead only one value.");
             }
 
-            int columnIndex = tableModel.Schema.FindColumnDefinitionByPid(columnPid).Idx;
+            int columnIndex = tableModel.Definition.FindColumnDefinitionByPid(columnPid).Idx;
 
             var columnValuesToSet = columnValues.ToArray(); // Make a copy to avoid modifying the original array
 
@@ -557,8 +557,8 @@
                 }
                 else
                 {
-                    var emptyRow = new object[tableModel.Schema.ColumnDefinitions.Count];
-                    emptyRow[tableModel.Schema.PrimaryKeyColumn.Idx] = primaryKeyToSet;
+                    var emptyRow = new object[tableModel.Definition.ColumnDefinitions.Count];
+                    emptyRow[tableModel.Definition.PrimaryKeyColumn.Idx] = primaryKeyToSet;
                     emptyRow[columnIndex] = columnValuesToSet[i];
 
                     tableModel.SetRow(emptyRow);
@@ -640,7 +640,7 @@
                 throw new ArgumentException("Column index must be 1 or higher.", nameof(oneBasedColumnIndex));
             }
 
-            if (oneBasedColumnIndex > tableModel.Schema.ColumnDefinitions.Count)
+            if (oneBasedColumnIndex > tableModel.Definition.ColumnDefinitions.Count)
             {
                 throw new ArgumentException("Column index exceeds number of columns.", nameof(oneBasedColumnIndex));
             }
@@ -650,7 +650,7 @@
                 throw new ArgumentException("Row index exceeds number of rows", nameof(oneBasedRowIndex));
             }
 
-            return tableModel.GetCell(tableModel.GetRowPrimaryKey(oneBasedRowIndex - 1), tableModel.Schema.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1).Pid);
+            return tableModel.GetCell(tableModel.GetRowPrimaryKey(oneBasedRowIndex - 1), tableModel.Definition.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1).Pid);
         }
 
         /// <summary>
@@ -674,7 +674,7 @@
                 throw new ArgumentException("Column index must be 2 or higher.", nameof(oneBasedColumnIndex));
             }
 
-            if (oneBasedColumnIndex > tableModel.Schema.ColumnDefinitions.Count)
+            if (oneBasedColumnIndex > tableModel.Definition.ColumnDefinitions.Count)
             {
                 throw new ArgumentException("Column index exceeds number of columns.", nameof(oneBasedColumnIndex));
             }
@@ -686,7 +686,7 @@
 
             string primaryKey = tableModel.GetRowPrimaryKey(oneBasedRowIndex - 1);
 
-            var columnDefinition = tableModel.Schema.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1);
+            var columnDefinition = tableModel.Definition.FindColumnDefinitionByIdx(oneBasedColumnIndex - 1);
 
             tableModel.SetCell(primaryKey, columnDefinition.Pid, value, timeInfo);
 

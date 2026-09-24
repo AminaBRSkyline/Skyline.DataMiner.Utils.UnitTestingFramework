@@ -140,11 +140,11 @@ Programmatic protocol definitions are useful for focused tests that only need a 
 ```csharp
 var keyColumn = new ColumnDefinition("Key", typeof(string), pid: 201, idx: 0, allowNull: false);
 var valueColumn = new ColumnDefinition("Value", typeof(string), pid: 202, idx: 1);
-var tableSchema = new TableSchema(new[] { keyColumn, valueColumn }, keyColumn);
+var tableDefinition = new TableDefinition(new[] { keyColumn, valueColumn }, keyColumn);
 
 var dmsMock = new DmsBuilder()
     .WithProtocol("ExampleProtocol", protocol => protocol
-        .AddTableDefinition(200, tableSchema))
+        .AddTableDefinition(200, tableDefinition))
     .WithDma(1, dma => dma
         .WithElement(
             id: 10,

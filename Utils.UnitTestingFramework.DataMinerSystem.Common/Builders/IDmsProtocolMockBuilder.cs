@@ -11,7 +11,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
         private readonly string name;
         private readonly string version;
         private readonly Dictionary<int, ParameterDefinition> parameterDefinitions = new Dictionary<int, ParameterDefinition>();
-        private readonly Dictionary<int, TableSchema> tableDefinitions = new Dictionary<int, TableSchema>();
+        private readonly Dictionary<int, TableDefinition> tableDefinitions = new Dictionary<int, TableDefinition>();
 
         public IDmsProtocolMockBuilder(string name, string version = IDmsProtocolMock.DefaultVersion)
         {
@@ -35,11 +35,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             return this;
         }
 
-        public IDmsProtocolMockBuilder AddTableDefinition(int tableId, TableSchema tableSchema)
+        public IDmsProtocolMockBuilder AddTableDefinition(int tableId, TableDefinition tableDefinition)
         {
-            if (tableSchema == null)
+            if (tableDefinition == null)
             {
-                throw new ArgumentNullException(nameof(tableSchema));
+                throw new ArgumentNullException(nameof(tableDefinition));
             }
 
             if (tableDefinitions.ContainsKey(tableId))
@@ -47,7 +47,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
                 throw new ArgumentException($"A table definition with ID '{tableId}' has already been added.", nameof(tableId));
             }
 
-            tableDefinitions.Add(tableId, tableSchema);
+            tableDefinitions.Add(tableId, tableDefinition);
             return this;
         }
 

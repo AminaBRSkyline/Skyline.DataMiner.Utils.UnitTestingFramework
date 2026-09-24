@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Tests
 {
+    using System;
+    using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
     using Skyline.DataMiner.Net.Apps.DataMinerObjectModel;
@@ -41,7 +37,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
 
         [DeploymentItem("TestFiles/Model/Data/protocol.xml")]
         [TestMethod]
-        public void Build_AddsRowsToElementTable_WithTable()
+        public void Build_AddsRowsToElementTable_FillTable()
         {
             // Arrange
             var row = new object[] { "one", "one-desc", 3.0, 4.0, 5.0 };
@@ -51,12 +47,17 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                 .WithProtocol("protocol.xml")
                 .WithDma(id: 1, dma => dma
                     .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
-                        .WithTable(tableId: 900, rows: [row])))
+                        .FillTable(tableId: 900, rows: [row])
+                        .FillTable(tableId: 900,
+                            row => row.SetPrimaryKey("two").SetValueByIdx(2, "two-desc"),
+                            row => row.SetPrimaryKey("three").SetValueByIdx(2, "three-desc"))))
                 .Build();
 
             // Assert
             var table = dmsMock.Object.GetAgent(1).GetElement("Element 33").GetTable(900);
             Assert.IsTrue(table.RowExists("one"));
+            Assert.IsTrue(table.RowExists("two"));
+            Assert.IsTrue(table.RowExists("three"));
             CollectionAssert.AreEqual(row, table.GetRow("one"));
         }
 
@@ -98,7 +99,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var tableBuilder = new TableModelBuilder(200);
             tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
             tableBuilder.AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value");
-            var tableSchema = tableBuilder.Build().Schema;
+            var tableDefinition = tableBuilder.Build().Definition;
             var row = new object[] { "row-1", "value-1" };
             var domDefinitionId = Guid.NewGuid();
 
@@ -106,13 +107,13 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var dmsMock = new DmsBuilder()
                 .WithProtocol(name: "CompleteProtocol", configure: protocol => protocol
                     .AddParameterDefinition(parameterDefinition)
-                    .AddTableDefinition(tableId: 200, tableSchema: tableSchema))
+                    .AddTableDefinition(tableId: 200, tableDefinition))
                 .WithView(viewId: 55, name: "Complete view")
                 .WithDma(id: 1, dma => dma
                     .WithElement(id: 10, name: "Complete element", protocolName: "CompleteProtocol", configure: element => element
                         .UnderView(viewId: 55)
-                        .WithParameter<int?>(parameterId: 100, value: 7)
-                        .WithTable(tableId: 200, rows: [row])))
+                        .SetParameter<int?>(parameterId: 100, value: 7)
+                        .FillTable(tableId: 200, rows: [row])))
                 .WithDomDefinition(moduleId: "complete-module", createDefinition: () => new DomDefinitionBuilder()
                     .WithID(domDefinitionId)
                     .WithName("DOM definition")
@@ -174,13 +175,13 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var tableBuilder = new TableModelBuilder(200);
             tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
             tableBuilder.AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value");
-            var tableSchema = tableBuilder.Build().Schema;
+            var tableDefinition = tableBuilder.Build().Definition;
 
             // Act
             var dmsMock = new DmsBuilder()
                 .WithProtocol(name: "CustomProtocol", configure: protocol => protocol
                     .AddParameterDefinition(parameterDefinition)
-                    .AddTableDefinition(tableId: 200, tableSchema: tableSchema))
+                    .AddTableDefinition(tableId: 200, tableDefinition: tableDefinition))
                 .WithDma(id: 1, dma => dma
                     .WithElement(id: 10, name: "Element 10", protocolName: "CustomProtocol"))
                 .Build();
@@ -219,7 +220,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                 .WithProtocol("protocol.xml")
                 .WithDma(id: 1, dma => dma
                     .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
-                        .WithParameter<int?>(parameterId: 800, value: 7)))
+                        .SetParameter<int?>(parameterId: 800, value: 7)))
                 .Build();
 
             var value = dmsMock.Object.GetElement("Element 33").GetStandaloneParameter<int?>(800).GetValue();
@@ -248,7 +249,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
                 .WithProtocol("protocol.xml")
                 .WithDma(id: 1, dma => dma
                     .WithElement(id: 33, name: "Element 33", protocolName: ProtocolName, configure: element => element
-                        .WithTable(tableId: 900, rows: null)));
+                        .FillTable(tableId: 900, rows: null)));
 
             // Act & Assert
             Assert.ThrowsExactly<ArgumentNullException>(() => builder.Build());

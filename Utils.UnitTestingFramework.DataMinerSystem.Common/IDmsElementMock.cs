@@ -406,7 +406,7 @@
 
             var message = new ParameterTableUpdateEventMessage(agentId, id, tableModel.TableId)
             {
-                IndexColumnID = tableModel.Schema.PrimaryKeyColumn.Pid,
+                IndexColumnID = tableModel.Definition.PrimaryKeyColumn.Pid,
                 TableIndex = e.PrimaryKey,
                 TableIndexPK = e.PrimaryKey,
                 IsDeleted = isDeleted,

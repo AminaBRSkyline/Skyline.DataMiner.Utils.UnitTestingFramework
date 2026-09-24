@@ -63,9 +63,9 @@
 
         public ProtocolType Type { get; set; }
 
-        public void AddTableDefinition(int tableId, TableSchema tableSchema)
+        public void AddTableDefinition(int tableId, TableDefinition tableDefinition)
         {
-            Definitions.AddTableDefinition(tableId, tableSchema);
+            Definitions.AddTableDefinition(tableId, tableDefinition);
         }
 
         public void AddParameterDefinition(ParameterDefinition parameterDefinition)

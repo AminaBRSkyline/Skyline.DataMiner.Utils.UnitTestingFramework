@@ -31,13 +31,13 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var definitions = new ParameterAndTableDefinitions();
             var tableBuilder = new TableModelBuilder(200);
             tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
-            var schema = tableBuilder.Build().Schema;
-            definitions.AddTableDefinition(200, schema);
+            var tableDefinition = tableBuilder.Build().Definition;
+            definitions.AddTableDefinition(200, tableDefinition);
 
             var parametersAndTables = new ParametersAndTables(definitions);
 
             Assert.AreEqual(200, parametersAndTables.GetTable(200).TableId);
-            Assert.AreSame(schema, parametersAndTables.GetTable(200).Schema);
+            Assert.AreSame(tableDefinition, parametersAndTables.GetTable(200).Definition);
         }
 
         [TestMethod]

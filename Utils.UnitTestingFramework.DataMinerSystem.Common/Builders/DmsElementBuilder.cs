@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
+﻿namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
 {
+    using System;
+    using System.Collections.Generic;
+    using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
+
     public class DmsElementBuilder
     {
         private readonly int id;
@@ -28,29 +26,55 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common
             return this;
         }
 
-        public DmsElementBuilder WithTable(int tableId, object[][] rows)
+        public DmsElementBuilder FillTable(int tableId, object[][] rows)
         {
+            if (rows == null)
+            {
+                throw new ArgumentNullException(nameof(rows));
+            }
+
+            if (rows.Length == 0)
+                return this;
+
             actions.Add(elementMock =>
             {
-                if (rows == null)
-                {
-                    throw new ArgumentNullException(nameof(rows));
-                }
-
-                var table = elementMock.Object.GetTable(tableId);
-                var tableMock = (DmsTableMock)Moq.Mock.Get(table);
-
+                var table = elementMock.GetDmsTableMock(tableId);
                 foreach (var row in rows)
                 {
-                    tableMock.TableModel.SetRow(row);
+                    table.TableModel.SetRow(row);
                 }
             });
 
             return this;
         }
-        public DmsElementBuilder WithParameter<T>(int parameterId, T value)
+
+        public DmsElementBuilder FillTable(int tableId, params Action<RowBuilder>[] rowBuilderActions)
         {
-            actions.Add(elementMock => elementMock.Object.GetStandaloneParameter<T>(parameterId).SetValue(value));
+            if (rowBuilderActions is null)
+            {
+                throw new ArgumentNullException(nameof(rowBuilderActions));
+            }
+
+            if(rowBuilderActions.Length == 0)
+                return this;
+
+            actions.Add(elementMock =>
+            {
+                var table = elementMock.GetDmsTableMock(tableId);
+                foreach (var rowBuilderAction in rowBuilderActions)
+                {
+                    var rowBuilder = new RowBuilder(table.TableModel.Definition);
+                    rowBuilderAction(rowBuilder);
+                    table.SetRow(rowBuilder.Build());
+                }
+            });
+
+            return this;
+        }
+
+        public DmsElementBuilder SetParameter<T>(int parameterId, T value)
+        {
+            actions.Add(elementMock => elementMock.GetStandaloneParameterMock<T>(parameterId).ParameterModel.Update(value));
             return this;
         }
 

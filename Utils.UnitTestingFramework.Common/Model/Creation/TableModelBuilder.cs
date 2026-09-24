@@ -74,9 +74,9 @@
                 throw new InvalidOperationException("No primary key column defined.");
             }
 
-            var tableSchema = new TableSchema(columns, KeyColumn);
+            var tableDefinition = new TableDefinition(columns, KeyColumn);
 
-            return new TableModel(tableId, tableSchema);
+            return new TableModel(tableId, tableDefinition);
         }
     }
 }

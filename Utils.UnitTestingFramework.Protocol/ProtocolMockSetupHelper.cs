@@ -307,7 +307,7 @@
                        var row = table.GetRow(table.GetRowPrimaryKey(rowIndex));
                        if (row == null)
                        {
-                            return new object[table.Schema.ColumnDefinitions.Count];
+                            return new object[table.Definition.ColumnDefinitions.Count];
                        }
                        else
                        {
@@ -323,7 +323,7 @@
                        var row = table.GetRow(primaryKey);
                        if (row == null)
                        {
-                           return new object[table.Schema.ColumnDefinitions.Count];
+                           return new object[table.Definition.ColumnDefinitions.Count];
                        }
                        else
                        {

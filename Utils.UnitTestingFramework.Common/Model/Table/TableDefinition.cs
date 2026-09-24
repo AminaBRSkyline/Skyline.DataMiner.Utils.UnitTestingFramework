@@ -4,9 +4,9 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    public class TableSchema
+    public class TableDefinition
     {
-        public TableSchema(IEnumerable<ColumnDefinition> columns, ColumnDefinition primaryKeyColumn)
+        public TableDefinition(IEnumerable<ColumnDefinition> columns, ColumnDefinition primaryKeyColumn)
         {
             ColumnDefinitions = columns?.ToList() ?? throw new ArgumentNullException(nameof(columns));
             PrimaryKeyColumn = primaryKeyColumn ?? throw new ArgumentNullException(nameof(primaryKeyColumn));

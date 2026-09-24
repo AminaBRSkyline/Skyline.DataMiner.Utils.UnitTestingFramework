@@ -124,7 +124,7 @@ classDiagram
     }
 
     class ParameterDefinition
-    class TableSchema
+    class TableDefinition
 
     class IDmsElementMock {
         +GetStandaloneParameterMock~T~(...)
@@ -178,7 +178,7 @@ classDiagram
     ParameterAndTablesDefinitionsBuilder ..> ParameterAndTableDefinitions : builds from protocol XML
     IDmsProtocolMock *-- ParameterAndTableDefinitions : Definitions
     ParameterAndTableDefinitions o-- ParameterDefinition : parameter definitions
-    ParameterAndTableDefinitions o-- TableSchema : table definitions
+    ParameterAndTableDefinitions o-- TableDefinition : table definitions
 
     IDmsElementMock *-- ParametersAndTables : runtime values
     IDmsElementMock --> IDmsProtocolMock : obtains definitions

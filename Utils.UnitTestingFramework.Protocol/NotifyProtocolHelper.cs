@@ -153,7 +153,7 @@
 
                 var table = parametersAndTables.GetTable(tablePid);
 
-                return table.GetRow(primaryKey) ?? new object[table.Schema.ColumnDefinitions.Count];
+                return table.GetRow(primaryKey) ?? new object[table.Definition.ColumnDefinitions.Count];
             }
 
             internal object SetParameter(object value1, object value2)

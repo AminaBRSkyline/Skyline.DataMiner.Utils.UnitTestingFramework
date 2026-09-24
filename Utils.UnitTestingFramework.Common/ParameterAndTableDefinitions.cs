@@ -11,7 +11,7 @@
     {
         private readonly Dictionary<string, ParameterDefinition> parameterNameToDefinition = new Dictionary<string, ParameterDefinition>();
         private readonly Dictionary<int, ParameterDefinition> parameterIdToDefinition = new Dictionary<int, ParameterDefinition>();
-        private readonly Dictionary<int, TableSchema> tablesPerTablePid = new Dictionary<int, TableSchema>();
+        private readonly Dictionary<int, TableDefinition> tablesPerTablePid = new Dictionary<int, TableDefinition>();
 
         public ParameterAndTableDefinitions()
         {
@@ -58,11 +58,11 @@
             return definition;
         }
 
-        public void AddTableDefinition(int tableId, TableSchema tableSchema)
+        public void AddTableDefinition(int tableId, TableDefinition tableDefinition)
         {
-            if (tableSchema == null)
+            if (tableDefinition == null)
             {
-                throw new ArgumentNullException(nameof(tableSchema));
+                throw new ArgumentNullException(nameof(tableDefinition));
             }
 
             if (tablesPerTablePid.ContainsKey(tableId))
@@ -70,17 +70,17 @@
                 throw new ArgumentException($"There is already a table with ID '{tableId}'", nameof(tableId));
             }
 
-            tablesPerTablePid.Add(tableId, tableSchema);
+            tablesPerTablePid.Add(tableId, tableDefinition);
         }
 
-        public TableSchema GetTableDefinition(int tableId)
+        public TableDefinition GetTableDefinition(int tableId)
         {
-            if (!tablesPerTablePid.TryGetValue(tableId, out var tableSchema))
+            if (!tablesPerTablePid.TryGetValue(tableId, out var tableDefinition))
             {
                 throw new ArgumentException($"There is no table with ID '{tableId}'", nameof(tableId));
             }
 
-            return tableSchema;
+            return tableDefinition;
         }
 
         internal ICollection<ParameterDefinition> GetParameterDefinitions()
@@ -88,7 +88,7 @@
             return parameterIdToDefinition.Values.ToList();
         }
 
-        internal ICollection<KeyValuePair<int, TableSchema>> GetTableDefinitions()
+        internal ICollection<KeyValuePair<int, TableDefinition>> GetTableDefinitions()
         {
             return tablesPerTablePid.ToList();
         }

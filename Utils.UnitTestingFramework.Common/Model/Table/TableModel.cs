@@ -24,11 +24,11 @@
         /// Initializes a new instance of the <see cref="TableModel"/> class.
         /// </summary>
         /// <param name="tableId">The table identifier.</param>
-        /// <param name="tableSchema"></param>
-        internal TableModel(int tableId, TableSchema tableSchema)
+        /// <param name="tableDefinition"></param>
+        internal TableModel(int tableId, TableDefinition tableDefinition)
         {
             TableId = tableId;
-            Schema = tableSchema ?? throw new ArgumentNullException(nameof(tableSchema));
+            Definition = tableDefinition ?? throw new ArgumentNullException(nameof(tableDefinition));
         }
 
         /// <inheritdoc/>
@@ -44,7 +44,7 @@
         public int TableId { get; }
 
         /// <inheritdoc/>
-        public TableSchema Schema { get; }
+        public TableDefinition Definition { get; }
 
         /// <inheritdoc/>
         public int RowCount
@@ -107,7 +107,7 @@
                     return string.Empty;
                 }
 
-                var primaryKey = Convert.ToString(rows[rowIndex][Schema.PrimaryKeyColumn.Idx].Value);
+                var primaryKey = Convert.ToString(rows[rowIndex][Definition.PrimaryKeyColumn.Idx].Value);
 
                 return primaryKey;
             }
@@ -134,7 +134,7 @@
                 throw new ArgumentNullException(nameof(primaryKeysToValues));
             }
 
-            var columnDefinition = Schema.FindColumnDefinitionByPid(columnPid) ?? throw new ArgumentException(nameof(columnPid), $"A column with PID '{columnPid}' does not exist.");
+            var columnDefinition = Definition.FindColumnDefinitionByPid(columnPid) ?? throw new ArgumentException(nameof(columnPid), $"A column with PID '{columnPid}' does not exist.");
 
             using (var eventDelayer = GetEventDelayer()) // Event delayer needs to be disposed after the lock is released
             using (@lock.Write())
@@ -234,7 +234,7 @@
                 throw new ArgumentNullException(nameof(primaryKey));
             }
 
-            var column = Schema.FindColumnDefinitionByPid(columnPid) ?? throw new ArgumentException(nameof(columnPid), $"A column with PID '{columnPid}' does not exist.");
+            var column = Definition.FindColumnDefinitionByPid(columnPid) ?? throw new ArgumentException(nameof(columnPid), $"A column with PID '{columnPid}' does not exist.");
             
             using (@lock.Read())
             {
@@ -281,12 +281,12 @@
             {
                 foreach (var row in rows)
                 {
-                    if (row.Length != Schema.ColumnDefinitions.Count)
+                    if (row.Length != Definition.ColumnDefinitions.Count)
                     {
-                        throw new ArgumentException($"Each row must contain exactly {Schema.ColumnDefinitions.Count} values, one for each column.", nameof(rows));
+                        throw new ArgumentException($"Each row must contain exactly {Definition.ColumnDefinitions.Count} values, one for each column.", nameof(rows));
                     }
 
-                    string primaryKey = Convert.ToString(row[Schema.PrimaryKeyColumn.Idx]);
+                    string primaryKey = Convert.ToString(row[Definition.PrimaryKeyColumn.Idx]);
 
                     var existingRow = GetRowInternal(primaryKey);
 
@@ -330,7 +330,7 @@
             {
                 foreach (var row in rows)
                 {
-                    string primaryKey = Convert.ToString(row[Schema.PrimaryKeyColumn.Idx].Value);
+                    string primaryKey = Convert.ToString(row[Definition.PrimaryKeyColumn.Idx].Value);
 
                     eventDelayer.Enqueue(() => RaiseRowChanged(primaryKey, RowChangeType.Deleted));
                 }
@@ -349,7 +349,7 @@
 
                 foreach (var row in rows)
                 {
-                    string primaryKey = Convert.ToString(row[Schema.PrimaryKeyColumn.Idx].Value);
+                    string primaryKey = Convert.ToString(row[Definition.PrimaryKeyColumn.Idx].Value);
 
                     dict.Add(primaryKey, GetValues(row));
                 }
@@ -365,7 +365,7 @@
                 throw new ArgumentNullException(nameof(primaryKey));
             }
 
-            var column = Schema.FindColumnDefinitionByPid(columnPid) ?? throw new ArgumentException(nameof(columnPid), $"A column with PID '{columnPid}' does not exist.");
+            var column = Definition.FindColumnDefinitionByPid(columnPid) ?? throw new ArgumentException(nameof(columnPid), $"A column with PID '{columnPid}' does not exist.");
 
             using (@lock.Read())
             {
@@ -420,10 +420,10 @@
 
         private void UpdateExistingRow(object[] rowData, DateTime? timestamp, CellModel[] existingRow, EventDelayScope eventDispatchScope)
         {
-            string primaryKey = Convert.ToString(existingRow[Schema.PrimaryKeyColumn.Idx].Value);
+            string primaryKey = Convert.ToString(existingRow[Definition.PrimaryKeyColumn.Idx].Value);
 
             bool oneOrMoreCellsChanged = false;
-            foreach (var columnDefinition in Schema.ColumnDefinitions)
+            foreach (var columnDefinition in Definition.ColumnDefinitions)
             {
                 var cell = existingRow[columnDefinition.Idx];
 
@@ -449,11 +449,11 @@
 
         private void AddNewRow(object[] rowData, DateTime? timestamp)
         {
-            string primaryKey = Convert.ToString(rowData[Schema.PrimaryKeyColumn.Idx]);
+            string primaryKey = Convert.ToString(rowData[Definition.PrimaryKeyColumn.Idx]);
 
-            var rowToAdd = new CellModel[Schema.ColumnDefinitions.Count];
+            var rowToAdd = new CellModel[Definition.ColumnDefinitions.Count];
 
-            foreach (var columnDefinition in Schema.ColumnDefinitions)
+            foreach (var columnDefinition in Definition.ColumnDefinitions)
             {
                 var valueToAdd = rowData[columnDefinition.Idx];
 

@@ -36,14 +36,14 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var secondTableBuilder = new TableModelBuilder(200);
             secondTableBuilder.AddColumn(columnPid: 202, columnIdx: 0, isKey: true);
             var builder = new IDmsProtocolMockBuilder("Protocol")
-                .AddTableDefinition(200, firstTableBuilder.Build().Schema);
+                .AddTableDefinition(200, firstTableBuilder.Build().Definition);
 
             Assert.ThrowsExactly<ArgumentException>(() =>
-                builder.AddTableDefinition(200, secondTableBuilder.Build().Schema));
+                builder.AddTableDefinition(200, secondTableBuilder.Build().Definition));
         }
 
         [TestMethod]
-        public void AddTableDefinition_ThrowsArgumentNullException_WithNullSchema()
+        public void AddTableDefinition_ThrowsArgumentNullException_WithNullDefinition()
         {
             var builder = new IDmsProtocolMockBuilder("Protocol");
 
@@ -57,17 +57,17 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             var parameterDefinition = new ParameterDefinition("Parameter", typeof(double), 100);
             var tableBuilder = new TableModelBuilder(200);
             tableBuilder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
-            var tableSchema = tableBuilder.Build().Schema;
+            var tableDefinition = tableBuilder.Build().Definition;
 
             // Act
             var protocol = new IDmsProtocolMockBuilder("Protocol")
                 .AddParameterDefinition(parameterDefinition)
-                .AddTableDefinition(200, tableSchema)
+                .AddTableDefinition(200, tableDefinition)
                 .Build();
 
             // Assert
             Assert.AreSame(parameterDefinition, protocol.Definitions.GetParameterDefinition(100));
-            Assert.AreSame(tableSchema, protocol.Definitions.GetTableDefinition(200));
+            Assert.AreSame(tableDefinition, protocol.Definitions.GetTableDefinition(200));
         }
 
         [TestMethod]

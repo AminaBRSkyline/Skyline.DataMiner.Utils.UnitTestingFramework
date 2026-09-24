@@ -26,7 +26,7 @@
         }
 
         [TestMethod]
-        public void Schema_ReturnsNonNull()
+        public void TableDefinition_ReturnsNonNull()
         {
             // Arrange
             var tableModelBuilder = new TableModelBuilder(900);
@@ -37,7 +37,7 @@
             var tableModel = tableModelBuilder.Build();
 
             // Assert
-            Assert.IsNotNull(tableModel.Schema);
+            Assert.IsNotNull(tableModel.Definition);
         }
 
         [TestMethod]

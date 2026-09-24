@@ -103,7 +103,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Tests.Protocol.Data
         }
 
         [TestMethod]
-        public void SetRowReturnOneBasedIndex_RowArray_ShorterThanSchema_PadsWithNulls()
+        public void SetRowReturnOneBasedIndex_RowArray_ShorterThanTableDefinition_PadsWithNulls()
         {
             // Arrange
             var table = CreateThreeColumnTable();
@@ -121,7 +121,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Tests.Protocol.Data
         }
 
         [TestMethod]
-        public void SetRowReturnOneBasedIndex_RowArray_LongerThanSchema_Truncates()
+        public void SetRowReturnOneBasedIndex_RowArray_LongerThanTableDefinition_Truncates()
         {
             // Arrange
             var table = CreateThreeColumnTable();
@@ -216,7 +216,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Tests.Protocol.Data
         }
 
         [TestMethod]
-        public void AddRowReturnKey_RowArray_ShorterThanSchema_PadsWithNulls()
+        public void AddRowReturnKey_RowArray_ShorterThanTableDefinition_PadsWithNulls()
         {
             // Arrange
             var table = CreateThreeColumnTable();
@@ -233,7 +233,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Tests.Protocol.Data
         }
 
         [TestMethod]
-        public void AddRowReturnKey_RowArray_LongerThanSchema_Truncates()
+        public void AddRowReturnKey_RowArray_LongerThanTableDefinition_Truncates()
         {
             // Arrange
             var table = CreateThreeColumnTable();

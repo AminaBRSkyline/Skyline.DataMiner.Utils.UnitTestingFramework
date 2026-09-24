@@ -16,7 +16,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Protocol.Asserting
             this.tableModel = tableModel;
         }
 
-        public int ColumnCount => tableModel?.Schema?.ColumnDefinitions?.Count ?? 0;
+        public int ColumnCount => tableModel?.Definition?.ColumnDefinitions?.Count ?? 0;
 
         public int RowCount => tableModel?.RowCount ?? 0;
 

@@ -30,9 +30,9 @@
         int TableId { get; }
 
         /// <summary>
-        /// Gets the table schema.
+        /// Gets the table definition.
         /// </summary>
-        TableSchema Schema { get; }
+        TableDefinition Definition { get; }
 
         /// <summary>
         /// Gets the row count.

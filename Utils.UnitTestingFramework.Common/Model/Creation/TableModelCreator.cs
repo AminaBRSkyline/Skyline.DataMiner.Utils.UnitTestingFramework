@@ -28,7 +28,7 @@
                 return;
             }
 
-            definitions.AddTableDefinition(tableModel.TableId, tableModel.Schema);
+            definitions.AddTableDefinition(tableModel.TableId, tableModel.Definition);
         }
 
         public ITableModel CreateTableModelFromArrayOptions(IParamsParam parameter, IProtocolModelParameterFinder protocolModelParameterFinder)

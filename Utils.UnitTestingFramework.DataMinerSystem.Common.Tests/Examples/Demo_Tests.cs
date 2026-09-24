@@ -132,7 +132,7 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
                 .WithProtocol("Examples/protocol.xml")
                 .WithDma(id: 1, dma => dma
                     .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol", configure: element => element
-                        .WithTable(100,
+                        .FillTable(100,
                         [
                             ["old", "Old value"]
                         ])))
@@ -190,7 +190,7 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
                 .WithProtocol("Examples/protocol.xml")
                 .WithDma(id: 1, dma => dma
                     .WithElement(id: 11, name: "Element A", protocolName: "DemoProtocol", configure: element => element
-                        .WithParameter<int?>(parameterId: 10, value: 0)))
+                        .SetParameter<int?>(parameterId: 10, value: 0)))
                 .Build();
 
             var elementMock = dmsMock.GetElementMock("Element A");

@@ -245,7 +245,7 @@
 
         private bool Matches(object[] row, ColumnFilter filter)
         {
-            var columnDefinition = TableModel.Schema.FindColumnDefinitionByPid(filter.Pid);
+            var columnDefinition = TableModel.Definition.FindColumnDefinitionByPid(filter.Pid);
             if (columnDefinition == null)
             {
                 return false;
@@ -256,7 +256,7 @@
 
         private object GetCell(object[] row, int columnPid)
         {
-            var columnDefinition = TableModel.Schema.FindColumnDefinitionByPid(columnPid);
+            var columnDefinition = TableModel.Definition.FindColumnDefinitionByPid(columnPid);
             return columnDefinition == null ? null : row[columnDefinition.Idx];
         }
 
@@ -310,7 +310,7 @@
             // so the correct row is updated regardless of the key embedded in the provided data.
             var row = (object[])data.Clone();
 
-            var primaryKeyColumnIndex = TableModel.Schema.PrimaryKeyColumn.Idx;
+            var primaryKeyColumnIndex = TableModel.Definition.PrimaryKeyColumn.Idx;
             if (primaryKeyColumnIndex < row.Length)
             {
                 row[primaryKeyColumnIndex] = primaryKey;
@@ -339,7 +339,7 @@
 
         private IDictionary<string, object[]> GetData(int keyColumnIndex)
         {
-            if (keyColumnIndex < 0 || keyColumnIndex >= TableModel.Schema.ColumnCount)
+            if (keyColumnIndex < 0 || keyColumnIndex >= TableModel.Definition.ColumnCount)
             {
                 throw new ArgumentException($"'{keyColumnIndex}' is not a valid key column index.", nameof(keyColumnIndex));
             }

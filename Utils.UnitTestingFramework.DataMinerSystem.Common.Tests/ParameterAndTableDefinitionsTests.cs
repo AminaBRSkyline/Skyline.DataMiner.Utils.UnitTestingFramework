@@ -56,24 +56,24 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void AddTableDefinition_MakesDefinitionAvailable_ByTableId()
         {
             var definitions = new ParameterAndTableDefinitions();
-            var schema = CreateTableSchema();
+            var definition = CreateTableDefinition();
 
-            definitions.AddTableDefinition(200, schema);
+            definitions.AddTableDefinition(200, definition);
 
-            Assert.AreSame(schema, definitions.GetTableDefinition(200));
+            Assert.AreSame(definition, definitions.GetTableDefinition(200));
         }
 
         [TestMethod]
         public void AddTableDefinition_ThrowsArgumentException_WithDuplicateId()
         {
             var definitions = new ParameterAndTableDefinitions();
-            definitions.AddTableDefinition(200, CreateTableSchema());
+            definitions.AddTableDefinition(200, CreateTableDefinition());
 
-            Assert.ThrowsExactly<ArgumentException>(() => definitions.AddTableDefinition(200, CreateTableSchema()));
+            Assert.ThrowsExactly<ArgumentException>(() => definitions.AddTableDefinition(200, CreateTableDefinition()));
         }
 
         [TestMethod]
-        public void AddTableDefinition_ThrowsArgumentNullException_WithNullSchema()
+        public void AddTableDefinition_ThrowsArgumentNullException_WithNullDefinition()
         {
             var definitions = new ParameterAndTableDefinitions();
 
@@ -110,11 +110,11 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             Assert.ThrowsExactly<ArgumentException>(() => definitions.GetTableDefinition(200));
         }
 
-        private static TableSchema CreateTableSchema()
+        private static TableDefinition CreateTableDefinition()
         {
             var builder = new TableModelBuilder(200);
             builder.AddColumn(columnPid: 201, columnIdx: 0, isKey: true, columnName: "Key");
-            return builder.Build().Schema;
+            return builder.Build().Definition;
         }
     }
 }
