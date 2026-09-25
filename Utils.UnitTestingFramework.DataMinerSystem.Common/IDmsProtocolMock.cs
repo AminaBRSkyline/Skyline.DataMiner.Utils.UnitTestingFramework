@@ -65,7 +65,7 @@
             Definitions.AddTableDefinition(tableId, tableDefinition);
         }
 
-        public void AddParameterDefinition(ParameterDefinition parameterDefinition)
+        public void AddParameterDefinition(StandaloneParameterDefinition parameterDefinition)
         {
             Definitions.AddParameterDefinition(parameterDefinition);
         }

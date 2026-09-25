@@ -94,7 +94,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void Build_CreatesDmaElementParametersTablesViewsAndDom_WithCompleteConfiguration()
         {
             // Arrange
-            var parameterDefinition = new ParameterDefinition("Standalone", typeof(int), 100);
+            var parameterDefinition = new StandaloneParameterDefinition("Standalone", typeof(int), 100);
             var tableDefinition = new TableDefinitionBuilder()
                 .AddColumn(columnPid: 201, columnIdx: 0, isPrimaryKey: true, columnName: "Key")
                 .AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value")
@@ -137,8 +137,8 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
             const string protocolName = "VersionedProtocol";
             const string firstVersion = "1.0.0.1";
             const string secondVersion = "2.0.0.0";
-            var firstParameter = new ParameterDefinition("First version parameter", typeof(double), 100);
-            var secondParameter = new ParameterDefinition("Second version parameter", typeof(double), 200);
+            var firstParameter = new StandaloneParameterDefinition("First version parameter", typeof(double), 100);
+            var secondParameter = new StandaloneParameterDefinition("Second version parameter", typeof(double), 200);
 
             // Act
             var dmsMock = new DmsBuilder()
@@ -170,7 +170,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void Build_CreatesElementWithoutProtocolXml_WithManualProtocolDefinitions()
         {
             // Arrange
-            var parameterDefinition = new ParameterDefinition("Standalone", typeof(double), 100);
+            var parameterDefinition = new StandaloneParameterDefinition("Standalone", typeof(double), 100);
             var tableDefinition = new TableDefinitionBuilder()
                 .AddColumn(columnPid: 201, columnIdx: 0, isPrimaryKey: true, columnName: "Key")
                 .AddColumn(columnPid: 202, columnIdx: 1, columnName: "Value")

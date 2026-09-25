@@ -29,9 +29,8 @@
         public void DomInstanceWorkflow_TracksOnlyTargetDefinition_WhenInstancesAreCreatedUpdatedAndDeleted()
         {
             // Arrange
-            var dmsMock = CreateDmsMock();
+            var dmsMock = CreateDmsMock(out var definition);
             var domHelper = new DomHelper(dmsMock.Connection.Object.HandleMessages, ModuleId);
-            var definition = domHelper.DomDefinitions.Read(DomDefinitionExposers.Id.Equal(DomDefinitionId)).Single();
             var instanceId = new DomInstanceId(Guid.NewGuid());
             var instance = new DomInstanceBuilder(definition)
                 .WithID(instanceId)
@@ -70,7 +69,7 @@
             }
         }
 
-        private static IDmsMock CreateDmsMock()
+        private static IDmsMock CreateDmsMock(out DomDefinition domDefinition)
         {
             var sectionDefinition = new SectionDefinitionBuilder()
                 .WithID(SectionDefinitionId)
@@ -81,15 +80,17 @@
                     .WithType(typeof(string)))
                 .Build();
 
-            var domDefinition = new DomDefinitionBuilder()
+            var builtDomDefinition = new DomDefinitionBuilder()
                 .WithID(DomDefinitionId)
                 .WithName("Demo definition")
                 .AddSectionDefinitionLink(SectionDefinitionId)
                 .Build();
 
+            domDefinition = builtDomDefinition;
+
             return new DmsBuilder()
                 .WithSectionDefinition(ModuleId, () => sectionDefinition)
-                .WithDomDefinition(ModuleId, () => domDefinition)
+                .WithDomDefinition(ModuleId, () => builtDomDefinition)
                 .Build();
         }
     }

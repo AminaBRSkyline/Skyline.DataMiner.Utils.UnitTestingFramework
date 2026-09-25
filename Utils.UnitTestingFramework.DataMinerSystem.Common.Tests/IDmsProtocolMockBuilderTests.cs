@@ -13,10 +13,10 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void AddParameterDefinition_ThrowsArgumentException_WithDuplicateId()
         {
             var builder = new IDmsProtocolMockBuilder("Protocol")
-                .AddParameterDefinition(new ParameterDefinition("First", typeof(double), 100));
+                .AddParameterDefinition(new StandaloneParameterDefinition("First", typeof(double), 100));
 
             Assert.ThrowsExactly<ArgumentException>(() =>
-                builder.AddParameterDefinition(new ParameterDefinition("Second", typeof(double), 100)));
+                builder.AddParameterDefinition(new StandaloneParameterDefinition("Second", typeof(double), 100)));
         }
 
         [TestMethod]
@@ -55,7 +55,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void Build_AddsParameterAndTableDefinitions_ToProtocol()
         {
             // Arrange
-            var parameterDefinition = new ParameterDefinition("Parameter", typeof(double), 100);
+            var parameterDefinition = new StandaloneParameterDefinition("Parameter", typeof(double), 100);
             var tableDefinition = new TableDefinitionBuilder()
                 .AddColumn(columnPid: 201, columnIdx: 0, isPrimaryKey: true, columnName: "Key")
                 .Build();

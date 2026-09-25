@@ -15,7 +15,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common.Te
         public void Constructor_CreatesParameterModels_FromDefinitions()
         {
             var definitions = new ParameterAndTableDefinitions();
-            var definition = new ParameterDefinition("Parameter", typeof(string), 100);
+            var definition = new StandaloneParameterDefinition("Parameter", typeof(string), 100);
             definitions.AddParameterDefinition(definition);
 
             var parametersAndTables = new ParametersAndTables(definitions);

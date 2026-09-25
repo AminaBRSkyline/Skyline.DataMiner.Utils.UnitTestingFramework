@@ -16,9 +16,9 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Common
     internal class ParametersAndTables
     {
         // Dictionaries to allow fast lookup
-        private readonly Dictionary<string, ParameterDefinition> parameterNameToDefinition = new Dictionary<string, ParameterDefinition>();
-        private readonly Dictionary<int, ParameterDefinition> parameterIdToDefinition = new Dictionary<int, ParameterDefinition>();
-        private readonly Dictionary<ParameterDefinition, IParameterModel> parametersToValues = new Dictionary<ParameterDefinition, IParameterModel>();
+        private readonly Dictionary<string, StandaloneParameterDefinition> parameterNameToDefinition = new Dictionary<string, StandaloneParameterDefinition>();
+        private readonly Dictionary<int, StandaloneParameterDefinition> parameterIdToDefinition = new Dictionary<int, StandaloneParameterDefinition>();
+        private readonly Dictionary<StandaloneParameterDefinition, IParameterModel> parametersToValues = new Dictionary<StandaloneParameterDefinition, IParameterModel>();
 
         private readonly Dictionary<int, ITableModel> tablesPerTablePid = new Dictionary<int, ITableModel>();
 
@@ -35,8 +35,7 @@ namespace Skyline.DataMiner.Utils.UnitTestingFramework.Common
 
             foreach (var parameterDefinition in definitions.GetParameterDefinitions())
             {
-                object defaultValue = (parameterDefinition as StandaloneParameterDefinition)?.DefaultValue;
-                AddParameter(new ParameterModel(parameterDefinition, defaultValue));
+                AddParameter(new ParameterModel(parameterDefinition, parameterDefinition.DefaultValue));
             }
 
             foreach (var tableDefinition in definitions.GetTableDefinitions())
