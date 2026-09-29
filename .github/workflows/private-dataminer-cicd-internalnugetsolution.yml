@@ -19,7 +19,7 @@ on:
 jobs:
 
   detect-target:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     outputs:
       is-common: ${{ steps.detect.outputs.is-common }}
       is-protocol: ${{ steps.detect.outputs.is-protocol }}
