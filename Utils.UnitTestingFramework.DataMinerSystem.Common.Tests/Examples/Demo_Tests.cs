@@ -153,7 +153,7 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
             var dmsTableMock = dmsMock.GetElementMock("Element A").GetDmsTableMock(100);
 
             dmsTableMock.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
-            dmsTableMock.AllRows.Should().BeEquivalentTo(expectedRows);
+            dmsTableMock.AllRows.Values.Should().BeEquivalentTo(expectedRows);
         }
 
         [TestMethod]
@@ -179,7 +179,7 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
             };
 
             table.Verify(t => t.AddRow(It.IsAny<object[]>()), Times.Exactly(3));
-            table.AllRows.Should().BeEquivalentTo(expectedRows);
+            table.AllRows.Values.Should().BeEquivalentTo(expectedRows);
         }
 
         [TestMethod]

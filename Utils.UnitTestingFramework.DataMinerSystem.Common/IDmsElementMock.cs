@@ -3,17 +3,16 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-
+    using System.Reflection;
     using Moq;
-
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
+    using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Selectors;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Monitors;
+    using Skyline.DataMiner.Core.DataMinerSystem.Common.Templates;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Standalone;
     using Skyline.DataMiner.Utils.UnitTestingFramework.Common.Model.Table;
-    using Skyline.DataMiner.Core.DataMinerSystem.Common.Templates;
-    using Skyline.DataMiner.Core.DataMinerSystem.Common.Properties;
     using ParameterChangeEventMessage = Skyline.DataMiner.Net.Messages.ParameterChangeEventMessage;
     using ParameterTableUpdateEventMessage = Skyline.DataMiner.Net.Messages.ParameterTableUpdateEventMessage;
     using ParameterValue = Skyline.DataMiner.Net.Messages.ParameterValue;
@@ -623,7 +622,12 @@
                 var parameterModel = parametersAndTables.GetParameter(parameterId);
                 var parameterMockType = typeof(DmsStandaloneParameterMock<>).MakeGenericType(parameterType);
 
-                parameterMock = (Mock)Activator.CreateInstance(parameterMockType, parameterModel, Object);
+                parameterMock = (Mock)Activator.CreateInstance(
+                   parameterMockType,
+                   BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                   binder: null,
+                   args: new object[] { parameterModel, Object },
+                   culture: null);
                 standaloneParameterMocks.Add(cacheKey, parameterMock);
             }
 
