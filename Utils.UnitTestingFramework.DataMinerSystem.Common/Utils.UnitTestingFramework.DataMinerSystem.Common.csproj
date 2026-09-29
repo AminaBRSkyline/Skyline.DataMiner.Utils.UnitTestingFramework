@@ -42,6 +42,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Utils.UnitTestingFramework.Common\Utils.UnitTestingFramework.Common.csproj" />
+    <ProjectReference Include="..\Utils.UnitTestingFramework.Common\Utils.UnitTestingFramework.Common.csproj">
+      <PrivateAssets>All</PrivateAssets>
+    </ProjectReference>
   </ItemGroup>
 </Project>
