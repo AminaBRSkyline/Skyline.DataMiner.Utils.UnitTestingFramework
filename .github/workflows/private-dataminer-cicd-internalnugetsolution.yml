@@ -57,6 +57,7 @@ jobs:
     uses: SkylineCommunications/_ReusableWorkflows/.github/workflows/Master Workflow.yml@main
     with:
       solution-filter-name: "ProtocolPackage.slnf"
+      runs-on: "windows-latest"
 
   CI-DataMinerSystemCommonPackage:
     needs: [detect-target]
@@ -64,3 +65,4 @@ jobs:
     uses: SkylineCommunications/_ReusableWorkflows/.github/workflows/Master Workflow.yml@main
     with:
       solution-filter-name: "DataMinerSystemCommonPackage.slnf"
+      runs-on: "windows-latest"
