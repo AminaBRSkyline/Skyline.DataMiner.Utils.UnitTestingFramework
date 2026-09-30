@@ -41,6 +41,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Utils.UnitTestingFramework.Common\Utils.UnitTestingFramework.Common.csproj" />
+    <ProjectReference Include="..\Utils.UnitTestingFramework.Common\Utils.UnitTestingFramework.Common.csproj">
+      <PrivateAssets>All</PrivateAssets>
+    </ProjectReference>
   </ItemGroup>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -33,6 +33,9 @@
 
   <ItemGroup>
     <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Skyline.DataMiner.CICD.Models.Protocol" Version="1.1.0">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Skyline.DataMiner.Core.DataMinerSystem.Common" Version="1.2.0.3" />
     <PackageReference Include="Skyline.DataMiner.Dev.Common" Version="10.4.0.24" />
     <PackageReference Include="Skyline.DataMiner.Utils.SecureCoding.Analyzers" Version="2.0.1">
@@ -46,4 +49,15 @@
       <PrivateAssets>All</PrivateAssets>
     </ProjectReference>
   </ItemGroup>
+
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('NuGetPackageId', 'Skyline.DataMiner.CICD.Models.Protocol'))" />
+    </ItemGroup>
+  </Target>
 </Project>
