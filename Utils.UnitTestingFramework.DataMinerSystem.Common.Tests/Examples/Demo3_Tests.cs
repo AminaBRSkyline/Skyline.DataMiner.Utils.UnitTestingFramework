@@ -1,6 +1,7 @@
 ﻿namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using FluentAssertions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -53,6 +54,11 @@
                     .WithName("Demo definition")
                     .AddSectionDefinitionLink(SectionDefinitionId)
                     .Build())
+                .WithDomInstance(ModuleId, () => new DomInstanceBuilder()
+                    .WithID(relatedInstanceId)
+                    .WithDefinition(DomDefinitionId)
+                    .WithFieldValue(SectionDefinitionId, StatusFieldId, "In progress")
+                    .Build())
                 // Part of DOM module we won't keep track of
                 .WithSectionDefinition(ModuleId, () => new SectionDefinitionBuilder()
                     .WithID(UnrelatedSectionDefinitionId)
@@ -66,6 +72,11 @@
                     .WithID(UnrelatedDomDefinitionId)
                     .WithName("Unrelated Demo definition")
                     .AddSectionDefinitionLink(UnrelatedSectionDefinitionId)
+                    .Build())
+                .WithDomInstance(ModuleId, () => new DomInstanceBuilder()
+                    .WithID(unrelatedInstanceId)
+                    .WithDefinition(UnrelatedDomDefinitionId)
+                    .WithFieldValue(UnrelatedSectionDefinitionId, UnrelatedStatusFieldId, "In progress")
                     .Build())
                 .Build();
         }
@@ -83,10 +94,10 @@
             var relatedInstance = domHelper.DomInstances.GetByID(relatedInstanceId);
             var unrelatedInstance = domHelper.DomInstances.GetByID(unrelatedInstanceId);
 
-            relatedInstance.AddOrUpdateFieldValue(SectionDefinitionId, StatusFieldId, "Completed");
+            relatedInstance.AddOrUpdateFieldValue<string>(SectionDefinitionId, StatusFieldId, "Completed");
             domHelper.DomInstances.Update(relatedInstance);
 
-            unrelatedInstance.AddOrUpdateFieldValue(UnrelatedSectionDefinitionId, UnrelatedStatusFieldId, "Completed");
+            unrelatedInstance.AddOrUpdateFieldValue<string>(UnrelatedSectionDefinitionId, UnrelatedStatusFieldId, "Completed");
             domHelper.DomInstances.Update(unrelatedInstance);
 
             // Assert
@@ -124,7 +135,7 @@
             NumberOfUpdated += CountMatching(message.Updated);
         }
 
-        private int CountMatching(System.Collections.Generic.IEnumerable<DomInstance> instances)
+        private int CountMatching(IEnumerable<DomInstance> instances)
         {
             return instances.Count(instance => instance.DomDefinitionId.Id.Equals(domDefinitionId));
         }

@@ -46,10 +46,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="MSTest.TestFramework" Version="4.4.1" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="..\Utils.UnitTestingFramework.Tests\TestFiles\Model\Data\protocol.xml">
       <Link>TestFiles\Model\Data\protocol.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
