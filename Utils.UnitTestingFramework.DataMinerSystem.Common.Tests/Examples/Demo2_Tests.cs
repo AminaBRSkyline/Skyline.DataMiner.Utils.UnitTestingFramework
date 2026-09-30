@@ -4,8 +4,10 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
     using FluentAssertions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Skyline.DataMiner.Analytics.GenericInterface.QueryBuilder;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
     using Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Monitors;
+    using Skyline.DataMiner.Protobuf.Data.Api.v1;
     using Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common;
 
     [TestClass]
@@ -13,6 +15,8 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
     public class Demo2_Tests
     {
         private const int ParameterId = 10;
+        private const int TableId = 100;
+        private const string ProtocolName = "DemoProtocol";
         private const string ProtocolPath = "Examples/protocol.xml";
         private Action<TableValueChange> onChangeCallback;
 
@@ -40,46 +44,32 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
             tableWatcher.NumberOfTableValueChanges.Should().Be(1);
         }
 
+
         [TestMethod]
-        public void ConnectionListener_ReturnsInvocationCounts_WhenTrackingStandaloneAndTableChanges()
+        public void TableWatcher_IncrementsNumberOfTableValueChanges_WhenRowIsAdded()
         {
-            //// Arrange
-            //var dmsMock = new DmsBuilder;
-            //var firstDma = dmsMock.CreateAgent(1, "DMA 1");
-            //var secondDma = dmsMock.CreateAgent(2, "DMA 2");
+            // Arrange
+            var elementId = new DmsElementId(1, 11);
+            var dmsMock = new DmsBuilder()
+                .WithProtocol(ProtocolPath)
+                .WithDma(id: elementId.AgentId, dma => dma
+                    .WithElement(id: elementId.ElementId, name: "Element", protocolName: ProtocolName))
+                .Build();
 
-            //var trackedElement = firstDma.CreateElement(ProtocolPath, id: 11, name: "Tracked element");
-            //var otherElementOnSameDma = firstDma.CreateElement(ProtocolPath, id: 12, name: "Other element on same DMA");
-            //var elementWithSameIdOnOtherDma = secondDma.CreateElement(ProtocolPath, id: 11, name: "Element with same ID on other DMA");
+            var watcher = new TableWatcher(dmsMock.Object, elementId, TableId);
 
-            //var trackedTable = trackedElement.GetDmsTableMock(100);
-            //var otherTableOnSameDma = otherElementOnSameDma.GetDmsTableMock(100);
-            //var tableOnOtherDma = elementWithSameIdOnOtherDma.GetDmsTableMock(100);
+            // Act
+            watcher.Start();
+            dmsMock.Object.GetElement(elementId).GetTable(TableId).AddRow(new object[] { "1", "Test" });
+            dmsMock.Object.GetElement(elementId).GetTable(TableId).AddRow(new object[] { "2", "Test2" });
+            dmsMock.Object.GetElement(elementId).GetTable(TableId).AddRow(new object[] { "3", "Tes3" });
+            dmsMock.Object.GetElement(elementId).GetTable(TableId).AddRow(new object[] { "4", "Tes4" });
 
-            //trackedTable.SetRow(new object[] { "row-1", "Initial value" });
-            //otherTableOnSameDma.SetRow(new object[] { "row-1", "Initial value" });
-            //tableOnOtherDma.SetRow(new object[] { "row-1", "Initial value" });
-
-            //var listener = new ConnectionListener(dmsMock.Connection.Object);
-
-            //// Act
-            //listener.StartTracking(trackedElement.Object.DmsElementId);
-
-            //otherElementOnSameDma.GetStandaloneParameterMock<int?>(ParameterId).UpdateValue(1);
-            //elementWithSameIdOnOtherDma.GetStandaloneParameterMock<int?>(ParameterId).UpdateValue(2);
-            //trackedElement.GetStandaloneParameterMock<int?>(ParameterId).UpdateValue(3);
-
-            //otherTableOnSameDma.SetCell("row-1", 102, "Other value");
-            //tableOnOtherDma.SetCell("row-1", 102, "Other DMA value");
-            //trackedTable.SetCell("row-1", 102, "Tracked value");
-
-            //listener.StopTracking();
-
-            //// Assert
-            //Assert.AreEqual(1, listener.NumberOfStandaloneParameterInvokations);
-            //Assert.AreEqual(1, listener.NumberOfTableParameterInvokations);
+            // Assert
+            watcher.NumberOfTableValueChanges.Should().Be(4);
         }
     }
+
 
     internal class TableWatcher
     {

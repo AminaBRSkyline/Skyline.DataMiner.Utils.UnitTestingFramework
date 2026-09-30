@@ -9,6 +9,7 @@
     using Skyline.DataMiner.Net;
     using Skyline.DataMiner.Net.Apps.DataMinerObjectModel;
     using Skyline.DataMiner.Net.Messages;
+    using Skyline.DataMiner.Net.Messages.SLDataGateway;
     using Skyline.DataMiner.Net.Sections;
     using Skyline.DataMiner.Utils.DOM.Builders;
     using Skyline.DataMiner.Utils.DOM.Extensions;
@@ -91,8 +92,8 @@
             var changeCounter = new GqiRealTimeDomUpdateTracker(dmsMock.Connection.Object, DomDefinitionId.Id);
             changeCounter.StartWatching();
 
-            var relatedInstance = domHelper.DomInstances.GetByID(relatedInstanceId);
-            var unrelatedInstance = domHelper.DomInstances.GetByID(unrelatedInstanceId);
+            var relatedInstance = domHelper.DomInstances.Read(DomInstanceExposers.Id.Equal(relatedInstanceId)).Single();
+            var unrelatedInstance = domHelper.DomInstances.Read(DomInstanceExposers.Id.Equal(unrelatedInstanceId)).Single();
 
             relatedInstance.AddOrUpdateFieldValue<string>(SectionDefinitionId, StatusFieldId, "Completed");
             domHelper.DomInstances.Update(relatedInstance);
