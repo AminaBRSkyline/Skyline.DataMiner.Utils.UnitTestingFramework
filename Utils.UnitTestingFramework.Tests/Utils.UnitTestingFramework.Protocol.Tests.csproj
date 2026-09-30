@@ -34,6 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Utils.UnitTestingFramework.Common\Utils.UnitTestingFramework.Common.csproj" />
     <ProjectReference Include="..\Utils.UnitTestingFramework.Protocol\Utils.UnitTestingFramework.Protocol.csproj" />
   </ItemGroup>
 
