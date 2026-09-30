@@ -19,7 +19,7 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
         public void ConnectionListener_ReturnsInvocationCounts_WhenTrackingStandaloneAndTableChanges()
         {
             // Arrange
-            var dmsMock = new IDmsMock();
+            var dmsMock = new DmsBuilder;
             var firstDma = dmsMock.CreateAgent(1, "DMA 1");
             var secondDma = dmsMock.CreateAgent(2, "DMA 2");
 
@@ -62,9 +62,9 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
         private readonly int primaryKeyColumnPid;
         private Guid sourceId = new Guid();
 
-        public TableWatcher(IDmsTable table)
+        public TableWatcher(IDms dms, DmsElementId elementId, int tablePid)
         {
-            this.table = table;
+            this.table = dms.GetElement(elementId).GetTable(tablePid);
         }
 
         public int NumberOfTableValueChanges { get; private set; }
