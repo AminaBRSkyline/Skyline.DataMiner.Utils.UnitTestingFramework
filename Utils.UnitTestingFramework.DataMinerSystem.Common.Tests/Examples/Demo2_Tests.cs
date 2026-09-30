@@ -1,13 +1,11 @@
 namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
 {
-    using System.Collections.Generic;
-    using System.Threading;
+    using System;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
-    using Skyline.DataMiner.Net;
-    using Skyline.DataMiner.Net.Messages;
+    using Skyline.DataMiner.Core.DataMinerSystem.Common.Subscription.Monitors;
     using Skyline.DataMiner.Utils.UnitTestingFramework.DataMinerSystem.Common;
 
     [TestClass]
@@ -58,72 +56,27 @@ namespace Utils.UnitTestingFramework.DataMinerSystem.Common.Tests.Examples
         }
     }
 
-    internal class ConnectionListener
+    internal class TableWatcher
     {
-        private readonly IConnection connection;
-        private readonly string updateSubscriptionId = "ParameterChangedSubscription";
-        private bool isTracking;
+        private readonly IDmsTable table;
+        private readonly int primaryKeyColumnPid;
+        private Guid sourceId = new Guid();
 
-        public int NumberOfStandaloneParameterInvokations;
-
-        public int NumberOfTableParameterInvokations;
-
-        public ConnectionListener(IConnection connection)
+        public TableWatcher(IDmsTable table)
         {
-            this.connection = connection;
+            this.table = table;
         }
 
-        public void StartTracking(DmsElementId elementId)
-        {
-            if (isTracking)
-            {
-                StopTracking();
-            }
+        public int NumberOfTableValueChanges { get; private set; }
 
-            NumberOfStandaloneParameterInvokations = 0;
-            NumberOfTableParameterInvokations = 0;
-            connection.OnNewMessage += Connection_OnNewMessage;
-            connection.AddSubscription(updateSubscriptionId, BuildChannelUpdateFilter(elementId));
-            connection.Subscribe();
-            isTracking = true;
+        public void Start()
+        {
+            table.StartValueMonitor(sourceId.ToString(), primaryKeyColumnPid, OnTableValueChanged, includeCurrentValues: false);
         }
 
-        public void StopTracking()
+        private void OnTableValueChanged(TableValueChange change)
         {
-            if (isTracking)
-            {
-                isTracking = false;
-                connection.OnNewMessage -= Connection_OnNewMessage;
-                connection.ClearSubscriptions(updateSubscriptionId);
-            }
-
-        }
-
-        private void Connection_OnNewMessage(object sender, NewMessageEventArgs e)
-        {
-            if (!isTracking)
-            {
-                return;
-            }
-
-            if (e.Message is ParameterTableUpdateEventMessage)
-            {
-                Interlocked.Increment(ref NumberOfTableParameterInvokations);
-            }
-            else if (e.Message is ParameterChangeEventMessage)
-            {
-                Interlocked.Increment(ref NumberOfStandaloneParameterInvokations);
-            }
-        }
-
-        private static SubscriptionFilter[] BuildChannelUpdateFilter(DmsElementId elementId)
-        {
-            var subscriptions = new List<SubscriptionFilter>
-            {
-                new SubscriptionFilterElement(typeof(ParameterChangeEventMessage), elementId.AgentId, elementId.ElementId),
-            };
-
-            return subscriptions.ToArray();
+            NumberOfTableValueChanges++;
         }
     }
 }
